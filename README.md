@@ -1,4 +1,4 @@
-# Evaluating Autonomous Driving Agents with Differing (Safe versus Risky) Driving Styles
+# Evaluating Autonomous Driving Agents with Differing (Safe vs Risky) Driving Styles
 
 ## Overview
 
