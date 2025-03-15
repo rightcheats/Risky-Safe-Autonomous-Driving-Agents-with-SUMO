@@ -1,21 +1,22 @@
+import os
+import sys
 import traci
-import sumolib
 
-#TODO: do simulation to test
-def run_sumo_simulation():
-    # TODO: replace path 
-    sumo_config_file = "path"
+if "SUMO_HOME" not in os.environ:
+    sys.exit("SUMO_HOME is not set. Please check your environment variables.")
 
-    # starts the sump simulation
-    traci.start([sumolib.checkBinary('sumo'), "-c", sumo_config_file])
+sumo_binary = "sumo-gui"
+# Update the path to point to the new folder
+sumo_config = os.path.join(os.path.dirname(__file__), "sumoScenario", "osm.sumocfg")
 
-    # run simulation for 100 steps
-    for step in range(100):
+def run_simulation():
+    traci.start([sumo_binary, "-c", sumo_config])
+    for step in range(100):  # Run for 100 simulation steps
         traci.simulationStep()
-        print(f"Step: {step} - Vehicle Count: {traci.vehicle.getIDList()}")
-
-    # close simulation
+        vehicles = traci.vehicle.getIDList()
+        print(f"Step {step}: Vehicles in simulation - {vehicles}")
     traci.close()
+    print("Simulation finished!")
 
 if __name__ == "__main__":
-    run_sumo_simulation()
+    run_simulation()
