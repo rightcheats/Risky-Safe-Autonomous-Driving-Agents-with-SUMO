@@ -8,7 +8,7 @@ if "SUMO_HOME" not in os.environ:
 
 # define config and binaries
 sumo_binary = "sumo-gui"
-sumo_config = os.path.join(os.path.dirname(__file__), "sumoScenario", "osm.sumocfg")
+sumo_config = os.path.join(os.path.dirname(__file__), "..", "osm_data", "osm.sumocfg")
 
 def run_simulation():
     """Starts the SUMO simulation and runs for 100 steps."""
