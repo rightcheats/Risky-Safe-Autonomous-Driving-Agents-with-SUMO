@@ -39,6 +39,10 @@ class AgentManager:
         traci.vehicle.add(risky_id, routeID=route_id, departSpeed="max", departLane="best")
         print(f"Injected vehicles '{safe_id}' and '{risky_id}' on route '{route_id}'.")
 
+        # Set colors for the vehicles to distinguish them
+        traci.vehicle.setColor(safe_id, (0, 0, 255))  # Blue color for SafeDriver
+        traci.vehicle.setColor(risky_id, (255, 0, 0))  # Red color for RiskyDriver
+
         # Tie vehicle IDs to your agent classes
         safe_agent = SafeDriver(safe_id, route=route_id)
         risky_agent = RiskyDriver(risky_id, route=route_id)
