@@ -44,7 +44,17 @@ class AgentManager:
         risky_agent = RiskyDriver(risky_id, route=route_id)
         self.agents.extend([safe_agent, risky_agent])
 
-    def update_agents(self):
+    def update_agents(self, step):
+        # Risky camera auto-follow
+        if step % 10 == 0:  
+            if "risky_1" in traci.vehicle.getIDList():
+                traci.gui.trackVehicle("View #0", "risky_1")
+
+        # UNCOMMENT TO GET SAFE AUTO-TRACKING
+        #if step % 10 == 0:  
+        #    if "safe_1" in traci.vehicle.getIDList():
+        #        traci.gui.trackVehicle("View #0", "safe_1")        
+
         for agent in self.agents:
             if agent.vehicle_id in traci.vehicle.getIDList():
                 current_route = traci.vehicle.getRoute(agent.vehicle_id)

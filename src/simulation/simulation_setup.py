@@ -16,7 +16,7 @@ def run_simulation():
 
     for step in range(100):  # Run for 100 simulation steps
         traci.simulationStep()
-        agent_manager.update_agents()  # Update agents and print route info
+        agent_manager.update_agents(step)  # Pass step to update_agents
 
     traci.close()
     print("Simulation finished!")
