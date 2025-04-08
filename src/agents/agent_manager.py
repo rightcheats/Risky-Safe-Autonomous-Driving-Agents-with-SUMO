@@ -1,34 +1,32 @@
 from .safe_driver import SafeDriver
 from .risky_driver import RiskyDriver
 import traci
-import random
 
 class AgentManager:
     def __init__(self):
         self.agents = []
 
-    def get_long_connected_route(self, min_length=40):
-        valid_edges = [e for e in traci.edge.getIDList() if not e.startswith(":")]
-
-        # Retry until a valid, long-enough route is found
-        while True:
-            src = random.choice(valid_edges)
-            dest = random.choice(valid_edges)
-            if src == dest:
-                continue
-
-            route_result = traci.simulation.findRoute(src, dest)
-            route_edges = route_result.edges
-
-            if len(route_edges) >= min_length:
-                return route_edges, f"route_{src}_{dest}"
+    def get_static_route(self):
+        # Hardcoded edge IDs from SUMO GUI
+        start_edge = "-1051388674#0"  # Chosen start edge (A)
+        end_edge = "511961981"         # Chosen end edge (B)
+        print(f"Static route from {start_edge} to {end_edge}")
+        
+        # Use SUMO's Dijkstra algorithm to compute the route
+        route_result = traci.simulation.findRoute(start_edge, end_edge)
+        route_edges = route_result.edges
+        
+        if not route_edges:
+            raise Exception(f"No route found between {start_edge} and {end_edge}")
+        
+        return route_edges, "static_AB_route"
 
     def inject_agents(self):
-        # Generate a good route
-        route_edges, route_id = self.get_long_connected_route()
+        # Use the computed static route
+        route_edges, route_id = self.get_static_route()
         try:
             traci.route.add(route_id, route_edges)
-            print(f"Created route '{route_id}' with edges: {route_edges}")
+            print(f"Created static route '{route_id}' with edges: {route_edges}")
         except Exception as e:
             raise Exception(f"Failed to add route: {e}")
 
@@ -39,9 +37,9 @@ class AgentManager:
         traci.vehicle.add(risky_id, routeID=route_id, departSpeed="max", departLane="best")
         print(f"Injected vehicles '{safe_id}' and '{risky_id}' on route '{route_id}'.")
 
-        # Set colors for the vehicles to distinguish them
-        traci.vehicle.setColor(safe_id, (0, 0, 255))  # Blue color for SafeDriver
-        traci.vehicle.setColor(risky_id, (255, 0, 0))  # Red color for RiskyDriver
+        # Set colors to distinguish the vehicles
+        traci.vehicle.setColor(safe_id, (0, 0, 255))   # Blue for SafeDriver
+        traci.vehicle.setColor(risky_id, (255, 0, 0))   # Red for RiskyDriver
 
         # Tie vehicle IDs to your agent classes
         safe_agent = SafeDriver(safe_id, route=route_id)
@@ -49,15 +47,23 @@ class AgentManager:
         self.agents.extend([safe_agent, risky_agent])
 
     def update_agents(self, step):
-        # Risky camera auto-follow
-        if step % 10 == 0:  
-            if "risky_1" in traci.vehicle.getIDList():
-                traci.gui.trackVehicle("View #0", "risky_1")
+        # # Risky driver auto-follow
+        # if step % 10 == 0:  
+        #     if "risky_1" in traci.vehicle.getIDList():
+        #         traci.gui.trackVehicle("View #0", "risky_1")
 
-        # UNCOMMENT TO GET SAFE AUTO-TRACKING
-        #if step % 10 == 0:  
-        #    if "safe_1" in traci.vehicle.getIDList():
-        #        traci.gui.trackVehicle("View #0", "safe_1")        
+        # for agent in self.agents:
+        #     if agent.vehicle_id in traci.vehicle.getIDList():
+        #         current_route = traci.vehicle.getRoute(agent.vehicle_id)
+        #         print(f"Vehicle '{agent.vehicle_id}' is following route: {current_route}")
+        #         agent.update()
+        #     else:
+        #         print(f"Warning: Vehicle '{agent.vehicle_id}' not in simulation yet.")
+
+        # Safe driver auto-follow
+        if step % 10 == 0:  
+            if "safe_1" in traci.vehicle.getIDList():
+                traci.gui.trackVehicle("View #0", "safe_1")
 
         for agent in self.agents:
             if agent.vehicle_id in traci.vehicle.getIDList():
