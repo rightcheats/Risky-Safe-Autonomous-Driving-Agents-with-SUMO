@@ -52,6 +52,11 @@ class AgentManager:
         #     if "risky_1" in traci.vehicle.getIDList():
         #         traci.gui.trackVehicle("View #0", "risky_1")
 
+        # Safe driver auto-follow
+        if step % 10 == 0:  
+            if "safe_1" in traci.vehicle.getIDList():
+                traci.gui.trackVehicle("View #0", "safe_1")
+
         # for agent in self.agents:
         #     if agent.vehicle_id in traci.vehicle.getIDList():
         #         current_route = traci.vehicle.getRoute(agent.vehicle_id)
@@ -59,16 +64,3 @@ class AgentManager:
         #         agent.update()
         #     else:
         #         print(f"Warning: Vehicle '{agent.vehicle_id}' not in simulation yet.")
-
-        # Safe driver auto-follow
-        if step % 10 == 0:  
-            if "safe_1" in traci.vehicle.getIDList():
-                traci.gui.trackVehicle("View #0", "safe_1")
-
-        for agent in self.agents:
-            if agent.vehicle_id in traci.vehicle.getIDList():
-                current_route = traci.vehicle.getRoute(agent.vehicle_id)
-                print(f"Vehicle '{agent.vehicle_id}' is following route: {current_route}")
-                agent.update()
-            else:
-                print(f"Warning: Vehicle '{agent.vehicle_id}' not in simulation yet.")
