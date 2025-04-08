@@ -14,7 +14,7 @@ def run_simulation():
     agent_manager = AgentManager()
     agent_manager.inject_agents()
 
-    for step in range(100):  # Run for 100 simulation steps
+    for step in range(300):  # Run for 100 simulation steps
         traci.simulationStep()
         agent_manager.update_agents(step)  # Pass step to update_agents
 

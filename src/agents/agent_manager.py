@@ -7,7 +7,7 @@ class AgentManager:
     def __init__(self):
         self.agents = []
 
-    def get_long_connected_route(self, min_length=5):
+    def get_long_connected_route(self, min_length=40):
         valid_edges = [e for e in traci.edge.getIDList() if not e.startswith(":")]
 
         # Retry until a valid, long-enough route is found
