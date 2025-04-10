@@ -14,7 +14,7 @@ def run_simulation():
     agent_manager = AgentManager()
     agent_manager.inject_agents()
 
-    destination_edge = "511961981"
+    destination_edge = "511961981"  # Destination edge (B)
 
     # Store agent info
     agents = {
@@ -34,47 +34,50 @@ def run_simulation():
         },
     }
 
-    for step in range(300):
+    max_steps = 3000  # Safety limit in case agents never reach destination
+    step = 0
+    while step < max_steps:
         traci.simulationStep()
         agent_manager.update_agents(step)
-
         active_vehicles = traci.vehicle.getIDList()
 
+        # Check if each agent is active and on the destination edge
         for vid in agents.keys():
             if vid in active_vehicles:
                 current_edge = traci.vehicle.getRoadID(vid)
                 agents[vid]["edges_visited"].add(current_edge)
+                agents[vid]["total_distance"] = traci.vehicle.getDistance(vid)
+                if current_edge == destination_edge:
+                    # Mark as reached if not already recorded
+                    if not agents[vid]["reached"]:
+                        agents[vid]["end_step"] = step
+                        agents[vid]["reached"] = True
+            # Do not mark as reached if the vehicle is no longer active.
+            # We want to wait until we actually observe it on destination_edge.
 
-                # Track distance traveled
-                distance = traci.vehicle.getDistance(vid)
-                agents[vid]["total_distance"] = distance  # Overwrites with cumulative dist
-
-                if current_edge == destination_edge and not agents[vid]["reached"]:
-                    agents[vid]["end_step"] = step
-                    agents[vid]["reached"] = True
-
-            elif not agents[vid]["reached"]:
-                # If vehicle is no longer active but hasn't been marked as reached
-                agents[vid]["end_step"] = step
-                agents[vid]["reached"] = True
-
-        # End sim if both finished
-        if all(agent["reached"] for agent in agents.values()):
+        # Only break if both agents are still active and have reached destination.
+        if all(agents[vid]["reached"] for vid in agents):
+            print("Both agents are on the destination edge.")
             break
+
+        step += 1
 
     traci.close()
 
     print("\n=== Simulation Results ===")
     for vid, data in agents.items():
-        journey_time = data["end_step"] - data["start_step"]
-        avg_speed = data["total_distance"] / journey_time if journey_time > 0 else 0
-        num_edges = len(data["edges_visited"])
+        if data["end_step"] is not None:
+            journey_time = data["end_step"] - data["start_step"]
+            avg_speed = data["total_distance"] / journey_time if journey_time > 0 else 0
+            num_edges = len(data["edges_visited"])
 
-        print(f"\nAgent: {vid}")
-        print(f"→ Journey Time: {journey_time} steps")
-        print(f"→ Total Distance: {data['total_distance']:.2f} meters")
-        print(f"→ Average Speed: {avg_speed:.2f} m/s")
-        print(f"→ Edges Travelled: {num_edges}")
+            print(f"\nAgent: {vid}")
+            print(f"→ Journey Time: {journey_time} steps")
+            print(f"→ Total Distance: {data['total_distance']:.2f} meters")
+            print(f"→ Average Speed: {avg_speed:.2f} m/s")
+            print(f"→ Edges Travelled: {num_edges}")
+        else:
+            print(f"\nAgent: {vid} did not reach the destination.")
 
     print("\nSimulation finished!")
 
