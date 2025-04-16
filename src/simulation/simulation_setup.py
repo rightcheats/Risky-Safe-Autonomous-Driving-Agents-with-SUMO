@@ -12,7 +12,14 @@ sumo_config = os.path.join(os.path.dirname(__file__), "..", "osm_data", "osm.sum
 def run_simulation():
     traci.start([sumo_binary, "-c", sumo_config])
     agent_manager = AgentManager()
-    agent_manager.inject_agents()
+    
+    # Inject agents only after starting the simulation so that we can access the full network edges list.
+    try:
+        agent_manager.inject_agents()
+    except Exception as e:
+        print(f"Route validation failed: {e}")
+        traci.close()
+        return
 
     destination_edge = agent_manager.get_destination_edge()
 
@@ -33,14 +40,13 @@ def run_simulation():
         },
     }
 
-    max_steps = 3000
+    max_steps = 3000  # safety limit
     step = 0
     while step < max_steps:
         traci.simulationStep()
         agent_manager.update_agents(step)
 
         active_vehicles = traci.vehicle.getIDList()
-
         for vid in agents:
             if vid in active_vehicles:
                 current_edge = traci.vehicle.getRoadID(vid)
@@ -64,7 +70,6 @@ def run_simulation():
             journey_time = data["end_step"] - data["start_step"]
             avg_speed = data["total_distance"] / journey_time if journey_time > 0 else 0
             num_edges = len(data["edges_visited"])
-
             print(f"\nAgent: {vid}")
             print(f"→ Journey Time: {journey_time} steps")
             print(f"→ Total Distance: {data['total_distance']:.2f} meters")
