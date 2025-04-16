@@ -14,9 +14,8 @@ def run_simulation():
     agent_manager = AgentManager()
     agent_manager.inject_agents()
 
-    destination_edge = "511961981"  # Destination edge (B)
+    destination_edge = agent_manager.get_destination_edge()
 
-    # Store agent info
     agents = {
         "safe_1": {
             "reached": False,
@@ -34,30 +33,25 @@ def run_simulation():
         },
     }
 
-    max_steps = 3000  # Safety limit in case agents never reach destination
+    max_steps = 3000
     step = 0
     while step < max_steps:
         traci.simulationStep()
         agent_manager.update_agents(step)
+
         active_vehicles = traci.vehicle.getIDList()
 
-        # Check if each agent is active and on the destination edge
-        for vid in agents.keys():
+        for vid in agents:
             if vid in active_vehicles:
                 current_edge = traci.vehicle.getRoadID(vid)
                 agents[vid]["edges_visited"].add(current_edge)
                 agents[vid]["total_distance"] = traci.vehicle.getDistance(vid)
-                if current_edge == destination_edge:
-                    # Mark as reached if not already recorded
-                    if not agents[vid]["reached"]:
-                        agents[vid]["end_step"] = step
-                        agents[vid]["reached"] = True
-            # Do not mark as reached if the vehicle is no longer active.
-            # We want to wait until we actually observe it on destination_edge.
+                if current_edge == destination_edge and not agents[vid]["reached"]:
+                    agents[vid]["end_step"] = step
+                    agents[vid]["reached"] = True
 
-        # Only break if both agents are still active and have reached destination.
         if all(agents[vid]["reached"] for vid in agents):
-            print("Both agents are on the destination edge.")
+            print("Both agents reached the destination.")
             break
 
         step += 1
