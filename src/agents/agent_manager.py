@@ -23,6 +23,7 @@ class AgentManager:
         self.destination_edge = None
         self.chosen_route_index = None  # keep track of the selected route (1-10)
 
+    #TODO: remove? now have check_edges.py
     def validate_route_edges(self, from_edge, to_edge):
         valid_edges = traci.edge.getIDList()
         if from_edge not in valid_edges:
@@ -32,7 +33,7 @@ class AgentManager:
         print(f"Route validation: '{from_edge}' and '{to_edge}' are valid edges.")
 
     def inject_agents(self):
-        # Select a random route
+        # select random route from list
         self.chosen_route_index = random.randint(1, len(self.valid_routes))  # 1-based label
         from_edge, to_edge = self.valid_routes[self.chosen_route_index - 1]
         self.validate_route_edges(from_edge, to_edge)
@@ -43,7 +44,6 @@ class AgentManager:
         try:
             traci.route.add(self.route_id, [from_edge, to_edge])
         except traci.TraCIException:
-            # The route may already exist.
             pass
 
         safe_id = "safe_1"
@@ -59,13 +59,19 @@ class AgentManager:
         self.agents.append(RiskyDriver(risky_id, self.route_id))
 
     def update_agents(self, step):
+        # cam view, change to risky_1 if needed
         if step % 10 == 0 and "safe_1" in traci.vehicle.getIDList():
             if traci.hasGUI():
                 traci.gui.trackVehicle("View #0", "safe_1")
 
-
+    # track whether reach destination
     def get_destination_edge(self):
         return self.destination_edge
 
+    # track which route
     def get_route_label(self):
         return self.chosen_route_index
+    
+    # track collisions
+    def get_collisions(self):
+        return self.collisions

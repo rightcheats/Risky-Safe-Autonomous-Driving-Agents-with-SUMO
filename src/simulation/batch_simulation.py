@@ -4,38 +4,33 @@ import traci
 import csv
 from src.agents.agent_manager import AgentManager
 
-# Check if SUMO_HOME is set correctly
 if "SUMO_HOME" not in os.environ:
     sys.exit("SUMO_HOME is not set. Please check your environment variables.")
 
-# Use headless binary (no GUI)
-sumo_binary = "sumo"  # switch from "sumo-gui" to headless
-
-# Path to SUMO config
+sumo_binary = "sumo"  # headless
 sumo_config = os.path.join(os.path.dirname(__file__), "..", "osm_data", "osm.sumocfg")
 
-def run_simulation():
-    # Launch SUMO with optimised flags
+def run_simulation(run_number=1):
     traci.start([
         sumo_binary,
         "-c", sumo_config,
-        "--start",                  # auto-start simulation without manual GUI interaction
-        "--no-warnings",            # reduce console noise
-        "--no-step-log",            # suppress step-by-step logging
-        "--quit-on-end"             # auto-close after simulation ends
+        "--start",
+        "--no-warnings",
+        "--no-step-log",
+        "--quit-on-end"
     ])
 
     agent_manager = AgentManager()
 
-    # Inject agents after simulation starts to get full network access
     try:
         agent_manager.inject_agents()
     except Exception as e:
         print(f"Route validation failed: {e}")
         traci.close()
-        return
+        return None, None
 
     destination_edge = agent_manager.get_destination_edge()
+    route_index = agent_manager.get_route_label()
 
     agents = {
         "safe_1": {
@@ -72,75 +67,60 @@ def run_simulation():
                     agents[vid]["reached"] = True
 
         if all(agents[vid]["reached"] for vid in agents):
-            print("Both agents reached the destination.")
             break
 
         step += 1
 
     traci.close()
-
-    print("\n=== Simulation Results ===")
-    for vid, data in agents.items():
-        if data["end_step"] is not None:
-            journey_time = data["end_step"] - data["start_step"]
-            avg_speed = data["total_distance"] / journey_time if journey_time > 0 else 0
-            num_edges = len(data["edges_visited"])
-            print(f"\nAgent: {vid}")
-            print(f"→ Journey Time: {journey_time} steps")
-            print(f"→ Total Distance: {data['total_distance']:.2f} meters")
-            print(f"→ Average Speed: {avg_speed:.2f} m/s")
-            print(f"→ Edges Travelled: {num_edges}")
-        else:
-            print(f"\nAgent: {vid} did not reach the destination.")
-
-    return agents
-
+    return agents, route_index
 
 def run_multiple_simulations(num_runs=100):
-    # Initialize variables to store cumulative results for each agent
     agent_results = {
-        "safe_1": {
-            "total_journey_time": 0,
-            "total_distance": 0,
-            "total_speed": 0,
-            "total_edges": 0,
-            "reached_count": 0,
-        },
-        "risky_1": {
-            "total_journey_time": 0,
-            "total_distance": 0,
-            "total_speed": 0,
-            "total_edges": 0,
-            "reached_count": 0,
-        },
+        "safe_1": {"total_journey_time": 0, "total_distance": 0, "total_speed": 0, "total_edges": 0, "reached_count": 0},
+        "risky_1": {"total_journey_time": 0, "total_distance": 0, "total_speed": 0, "total_edges": 0, "reached_count": 0},
     }
 
-    # Run simulations multiple times
-    for run_number in range(1, num_runs + 1):
-        print(f"Running simulation {run_number}/{num_runs}...")
-        agents = run_simulation()  # Run a single simulation
-        
-        for vid, data in agents.items():
-            if data["end_step"] is not None:
-                journey_time = data["end_step"] - data["start_step"]
-                avg_speed = data["total_distance"] / journey_time if journey_time > 0 else 0
-                num_edges = len(data["edges_visited"])
-                
-                # Accumulate data for averages
-                agent_results[vid]["total_journey_time"] += journey_time
-                agent_results[vid]["total_distance"] += data["total_distance"]
-                agent_results[vid]["total_speed"] += avg_speed
-                agent_results[vid]["total_edges"] += num_edges
-                agent_results[vid]["reached_count"] += 1
-            else:
-                print(f"Agent {vid} did not reach the destination in run {run_number}.")
+    # File for detailed per-run results
+    detailed_path = os.path.join(os.path.dirname(__file__), "simulation_per_run.csv")
+    with open(detailed_path, mode="w", newline="") as f_detail:
+        writer_detail = csv.writer(f_detail)
+        writer_detail.writerow(["Run", "Agent ID", "Route Index", "Journey Time", "Distance", "Average Speed", "Edges Travelled", "Reached Destination"])
 
-    # Write the averaged results to CSV
-    output_path = os.path.join(os.path.dirname(__file__), "simulation_averages.csv")
-    with open(output_path, mode="w", newline="") as file:
+        for run_number in range(1, num_runs + 1):
+            print(f"Running simulation {run_number}/{num_runs}...")
+            agents, route_index = run_simulation(run_number)
+
+            if agents is None:
+                print(f"Run {run_number} failed to start properly.")
+                continue
+
+            for vid, data in agents.items():
+                if data["end_step"] is not None:
+                    journey_time = data["end_step"] - data["start_step"]
+                    avg_speed = data["total_distance"] / journey_time if journey_time > 0 else 0
+                    num_edges = len(data["edges_visited"])
+
+                    agent_results[vid]["total_journey_time"] += journey_time
+                    agent_results[vid]["total_distance"] += data["total_distance"]
+                    agent_results[vid]["total_speed"] += avg_speed
+                    agent_results[vid]["total_edges"] += num_edges
+                    agent_results[vid]["reached_count"] += 1
+
+                    writer_detail.writerow([
+                        run_number, vid, route_index, journey_time,
+                        round(data["total_distance"], 2),
+                        round(avg_speed, 2),
+                        num_edges, "Yes"
+                    ])
+                else:
+                    writer_detail.writerow([run_number, vid, route_index, "-", "-", "-", "-", "No"])
+
+    print("Detailed results saved to simulation_per_run.csv")
+
+    # File for overall averages
+    average_path = os.path.join(os.path.dirname(__file__), "simulation_averages.csv")
+    with open(average_path, mode="w", newline="") as file:
         writer = csv.writer(file)
-        
-        # Write header
         writer.writerow(["Agent ID", "Average Journey Time (steps)", "Average Distance (m)", "Average Speed (m/s)", "Average Edges Travelled", "Reaches Destination Count"])
 
         for vid in agent_results:
@@ -153,7 +133,6 @@ def run_multiple_simulations(num_runs=100):
             else:
                 avg_journey_time = avg_distance = avg_speed = avg_edges = 0
 
-            # Write averaged data for each agent
             writer.writerow([
                 vid,
                 round(avg_journey_time, 2),
@@ -166,4 +145,4 @@ def run_multiple_simulations(num_runs=100):
     print("Averaged results saved to simulation_averages.csv")
 
 if __name__ == "__main__":
-    run_multiple_simulations(100)  # Run 100 simulations and calculate averages
+    run_multiple_simulations(100)
