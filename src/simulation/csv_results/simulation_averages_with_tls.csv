@@ -1,0 +1,3 @@
+Agent,AvgTime,AvgDist,AvgSpeed,AvgEdges,Runs,AvgTLS,AvgStops,AvgWait,AvgAmber
+safe_1,255.67,1713.38,6.9,54.05,100,4.91,1.51,44.34,0.0
+risky_1,328.92,1655.02,5.68,55.26,100,4.91,2.42,45.08,0.0

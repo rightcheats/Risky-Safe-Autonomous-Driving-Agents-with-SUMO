@@ -1,0 +1,11 @@
+import csv
+from pathlib import Path
+
+class CsvExporter:
+    def to_file(self, path: str, headers: list[str], rows: list[list]):
+        # Ensure directory exists
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            writer.writerows(rows)
