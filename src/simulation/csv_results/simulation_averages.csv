@@ -1,0 +1,3 @@
+Agent,AvgTime(steps),AvgDistance(m),AvgSpeed(m/s),AvgEdges,NumRuns,AvgTLS_enc,AvgTLS_stops,AvgTLS_wait(s),AvgAmber_enc,AvgWaitTL
+safe_1,253.7,1752.46,7.07,55.38,100,5.16,1.67,38.24,0.0,2.15
+risky_1,315.89,1687.16,5.87,56.34,100,5.16,2.36,38.82,0.0,2.21

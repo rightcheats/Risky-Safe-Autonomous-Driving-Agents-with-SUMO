@@ -35,7 +35,7 @@ def main(num_runs: int = 100):
     # 1) Detailed per-run CSV
     per_run_rows = []
     for run_idx, (data, route_idx) in enumerate(all_runs, start=1):
-        per_run_rows += collector.summarize_run(data, route_idx)
+        per_run_rows += collector.summarise_run(data, route_idx)
     exporter.to_file(
         os.path.join(CSV_DIR, 'simulation_per_run.csv'),
         headers=[
@@ -51,7 +51,7 @@ def main(num_runs: int = 100):
         os.path.join(CSV_DIR, 'simulation_averages_with_tls.csv'),
         headers=[
             'Agent','AvgTime','AvgDist','AvgSpeed','AvgEdges','Runs',
-            'AvgTLS','AvgStops','AvgWait','AvgAmber'
+            'AvgTLS','AvgStops','AvgWaitTL','AvgAmber'
         ],
         rows=avg_rows
     )
