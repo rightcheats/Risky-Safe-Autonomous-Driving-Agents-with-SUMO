@@ -40,18 +40,19 @@ def main(num_runs: int = 100):
         os.path.join(CSV_DIR, 'simulation_per_run.csv'),
         headers=[
             'Agent','Route','Time(steps)','Distance(m)','Speed(m/s)','Edges',
-            'TLS_enc','TLS_stops','TLS_wait(s)','Amber_enc'
+            'TLS_enc','TLS_stops','TLS_wait(s)','Amber_enc','AvgWaitTL'
         ],
         rows=per_run_rows
     )
 
-    # 2) Aggregated averages (with TLS) CSV
+    # 2) Aggregated averages CSV
     avg_rows = collector.compute_averages(all_runs)
     exporter.to_file(
-        os.path.join(CSV_DIR, 'simulation_averages_with_tls.csv'),
+        os.path.join(CSV_DIR, 'simulation_averages.csv'),
         headers=[
-            'Agent','AvgTime','AvgDist','AvgSpeed','AvgEdges','Runs',
-            'AvgTLS','AvgStops','AvgWaitTL','AvgAmber'
+            'Agent','AvgTime(steps)','AvgDistance(m)','AvgSpeed(m/s)',
+            'AvgEdges','NumRuns','AvgTLS_enc','AvgTLS_stops',
+            'AvgTLS_wait(s)','AvgAmber_enc','AvgWaitTL'
         ],
         rows=avg_rows
     )

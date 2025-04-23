@@ -49,23 +49,21 @@ class SimulationRunner:
                 rec['edges_visited'].add(traci.vehicle.getRoadID(vid))
                 rec['total_distance'] = traci.vehicle.getDistance(vid)
 
-                # traffic ligts encountered
+                # traffic lights encountered
                 tls_list = traci.vehicle.getNextTLS(vid)
                 for tls_data in tls_list:
-                    tls_id, state, dist, *extra = tls_data  # Unpack safely
-
+                    tls_id, state, dist, *extra = tls_data
                     if dist <= 10.0:
                         rec['tls_encountered'].add(tls_id)
                         if 'y' in str(state).lower():
                             rec['amber_encountered'] += 1
 
-
-                # Stops & waits
+                # Wait time accumulation
                 speed = traci.vehicle.getSpeed(vid)
                 prev = rec['prev_speed']
                 if prev is not None and prev > 0 and speed == 0:
                     rec['tls_stop_count'] += 1
-                if speed == 0 and prev == 0:
+                if speed == 0:
                     rec['tls_wait_time'] += self.step_length
                 rec['prev_speed'] = speed
 
