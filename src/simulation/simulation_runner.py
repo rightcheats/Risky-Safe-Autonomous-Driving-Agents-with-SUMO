@@ -41,10 +41,12 @@ class SimulationRunner:
                 'red_run_count': 0,
                 'tls_last_state': {},
                 'max_speed': 0.0,
-                'sudden_brake_count': 0,    # count of high-decel events
-                'max_decel': 0.0,           # peak deceleration seen
-                'sum_decel': 0.0,           # sum of decelerations on those events
+                'sudden_brake_count': 0,
+                'max_decel': 0.0,
+                'sum_decel': 0.0,
+                'lane_change_count': 0,
                 'prev_speed': None,
+                'prev_lane': None,
                 'collision_count': 0,
             }
 
@@ -65,7 +67,7 @@ class SimulationRunner:
                 rec['edges_visited'].add(traci.vehicle.getRoadID(vid))
                 rec['total_distance'] = traci.vehicle.getDistance(vid)
 
-                # TLS proximity & run-through logic...
+                # TLS proximity & run-through
                 next_tls = traci.vehicle.getNextTLS(vid)
                 seen_ids = set()
                 for tls_id, state, dist, *extra in next_tls:
@@ -87,12 +89,12 @@ class SimulationRunner:
                     elif 'r' in last:
                         rec['red_run_count'] += 1
 
-                # speed, max-speed
+                # speed & max-speed
                 speed = traci.vehicle.getSpeed(vid)
                 if speed > rec['max_speed']:
                     rec['max_speed'] = speed
 
-                # sudden braking (deceleration)
+                # sudden braking
                 prev = rec['prev_speed']
                 if prev is not None:
                     delta_v = prev - speed
@@ -102,6 +104,12 @@ class SimulationRunner:
                         rec['sum_decel'] += decel
                         if decel > rec['max_decel']:
                             rec['max_decel'] = decel
+
+                # lane change detection
+                current_lane = traci.vehicle.getLaneID(vid)
+                if rec['prev_lane'] is not None and current_lane != rec['prev_lane']:
+                    rec['lane_change_count'] += 1
+                rec['prev_lane'] = current_lane
 
                 # TLS stops & wait time
                 if prev is not None and prev > 0 and speed == 0:

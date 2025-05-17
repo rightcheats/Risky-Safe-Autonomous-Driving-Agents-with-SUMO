@@ -33,7 +33,7 @@ def main(num_runs: int = 100):
 
     print(f"\n>>> Completed {successful}/{num_runs} runs.")
 
-    # 1) per-run
+    # 1) detailed per-run CSV
     per_rows = []
     for _, (data, ridx) in enumerate(all_runs, start=1):
         per_rows += collector.summarise_run(data, ridx)
@@ -41,27 +41,27 @@ def main(num_runs: int = 100):
         os.path.join(CSV_DIR, 'simulation_per_run.csv'),
         headers=[
             'Agent','Route','Time(steps)','Distance(m)','Speed(m/s)','MaxSpeed(m/s)','Edges',
-            'TLS_enc','TLS_stops','TLS_wait(s)','Amber_enc','Red_enc',
-            'Amber_runs','Red_runs',
+            'TLS_enc','TLS_stops','TLS_wait(s)',
+            'Amber_enc','Red_enc','Amber_runs','Red_runs',
             'Sudden_brakes','MaxDecel(m/s^2)','AvgDecel(m/s^2)',
-            'AvgWaitTL','Collisions'
+            'Lane_changes','AvgWaitTL','Collisions'
         ],
         rows=per_rows
     )
 
-    # 2) averages
+    # 2) aggregated averages CSV
     avg_rows = collector.compute_averages(all_runs)
     exporter.to_file(
         os.path.join(CSV_DIR, 'simulation_averages.csv'),
         headers=[
             'Agent','AvgTime(steps)','AvgDistance(m)','AvgSpeed(m/s)','AvgMaxSpeed(m/s)','AvgEdges',
-            'NumRuns','AvgTLS_enc','AvgTLS_stops','AvgTLS_wait(s)','AvgAmber_enc','AvgRed_enc',
-            'AvgAmber_runs','AvgRed_runs',
+            'NumRuns','AvgTLS_enc','AvgTLS_stops','AvgTLS_wait(s)',
+            'AvgAmber_enc','AvgRed_enc','AvgAmber_runs','AvgRed_runs',
             'AvgSudden_brakes','AvgMaxDecel(m/s^2)','AvgAvgDecel(m/s^2)',
-            'AvgWaitTL','AvgCollisions'
+            'AvgLane_changes','AvgWaitTL','AvgCollisions'
         ],
         rows=avg_rows
     )
 
 if __name__ == "__main__":
-    main(10)
+    main(100)

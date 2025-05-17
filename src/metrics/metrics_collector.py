@@ -3,7 +3,8 @@
 class MetricsCollector:
     """
     Compute per-run summaries and aggregated averages
-    for journey metrics, TLS interactions, max-speed, sudden braking, and collisions.
+    for journey metrics, TLS interactions, max-speed, sudden braking,
+    lane changes, and collisions.
     """
 
     def summarise_run(self, run_data: dict, route_index: int) -> list[list]:
@@ -13,14 +14,13 @@ class MetricsCollector:
          Edges,TLS_enc,TLS_stops,TLS_wait,
          Amber_enc,Red_enc,Amber_runs,Red_runs,
          Sudden_brakes,MaxDecel,AvgDecel,
-         AvgWaitTL,Collisions]
+         Lane_changes,AvgWaitTL,Collisions]
         """
         rows = []
         for vid, rec in run_data.items():
             if rec['end_step'] is not None:
                 t = rec['end_step']
                 avg_sp = rec['total_distance'] / t if t>0 else 0.0
-                # average decel per brake
                 avg_decel = (rec['sum_decel'] / rec['sudden_brake_count']
                              if rec['sudden_brake_count']>0 else 0.0)
                 avg_wait_tl = self.get_avg_waiting_time(rec)
@@ -43,12 +43,13 @@ class MetricsCollector:
                     rec['sudden_brake_count'],
                     round(rec['max_decel'],2),
                     round(avg_decel,2),
+                    rec['lane_change_count'],
                     round(avg_wait_tl,2),
                     rec.get('collision_count',0)
                 ])
             else:
-                # placeholders for 19 columns
-                rows.append([vid, route_index] + ["-"] * 17)
+                # placeholders for 20 columns
+                rows.append([vid, route_index] + ["-"] * 18)
         return rows
 
     def compute_averages(self, all_runs: list[tuple[dict,int]]) -> list[list]:
@@ -58,7 +59,7 @@ class MetricsCollector:
          AvgEdges,NumRuns,AvgTLS_enc,AvgTLS_stops,AvgTLS_wait,
          AvgAmber_enc,AvgRed_enc,AvgAmber_runs,AvgRed_runs,
          AvgSudden_brakes,AvgMaxDecel,AvgAvgDecel,
-         AvgWaitTL,AvgCollisions]
+         AvgLane_changes,AvgWaitTL,AvgCollisions]
         """
         agg = {
             vid: {
@@ -66,7 +67,7 @@ class MetricsCollector:
                 'sum_edges':0,'sum_tls':0,'sum_stops':0,'sum_wait':0.0,
                 'sum_amb_enc':0,'sum_red_enc':0,'sum_amb_runs':0,'sum_red_runs':0,
                 'sum_sud_brakes':0,'sum_max_decel':0.0,'sum_avg_decel':0.0,
-                'sum_wait_tl':0.0,'sum_collisions':0,'count':0
+                'sum_lane_changes':0,'sum_wait_tl':0.0,'sum_collisions':0,'count':0
             } for vid in ["safe_1","risky_1"]
         }
 
@@ -74,29 +75,29 @@ class MetricsCollector:
             for vid, rec in run_data.items():
                 if rec.get('end_step') is None:
                     continue
-                stats = agg[vid]
+                s = agg[vid]
                 t = rec['end_step']
-                stats['sum_time']       += t
-                stats['sum_dist']       += rec['total_distance']
-                stats['sum_sp']         += (rec['total_distance']/t if t>0 else 0.0)
-                stats['sum_max_sp']     += rec.get('max_speed',0.0)
-                stats['sum_edges']      += len(rec['edges_visited'])
-                stats['sum_tls']        += len(rec['tls_encountered'])
-                stats['sum_stops']      += rec['tls_stop_count']
-                stats['sum_wait']       += rec['tls_wait_time']
-                stats['sum_amb_enc']    += rec['amber_encountered']
-                stats['sum_red_enc']    += rec['red_encountered']
-                stats['sum_amb_runs']   += rec['amber_run_count']
-                stats['sum_red_runs']   += rec['red_run_count']
-                stats['sum_sud_brakes'] += rec['sudden_brake_count']
-                stats['sum_max_decel']  += rec['max_decel']
-                # per-run avg decel
+                s['sum_time']       += t
+                s['sum_dist']       += rec['total_distance']
+                s['sum_sp']         += (rec['total_distance']/t if t>0 else 0.0)
+                s['sum_max_sp']     += rec.get('max_speed',0.0)
+                s['sum_edges']      += len(rec['edges_visited'])
+                s['sum_tls']        += len(rec['tls_encountered'])
+                s['sum_stops']      += rec['tls_stop_count']
+                s['sum_wait']       += rec['tls_wait_time']
+                s['sum_amb_enc']    += rec['amber_encountered']
+                s['sum_red_enc']    += rec['red_encountered']
+                s['sum_amb_runs']   += rec['amber_run_count']
+                s['sum_red_runs']   += rec['red_run_count']
+                s['sum_sud_brakes'] += rec['sudden_brake_count']
+                s['sum_max_decel']  += rec['max_decel']
                 avg_decel = (rec['sum_decel']/rec['sudden_brake_count']
                              if rec['sudden_brake_count']>0 else 0.0)
-                stats['sum_avg_decel']  += avg_decel
-                stats['sum_wait_tl']    += self.get_avg_waiting_time(rec)
-                stats['sum_collisions'] += rec.get('collision_count',0)
-                stats['count']          += 1
+                s['sum_avg_decel']  += avg_decel
+                s['sum_lane_changes'] += rec['lane_change_count']
+                s['sum_wait_tl']    += self.get_avg_waiting_time(rec)
+                s['sum_collisions'] += rec.get('collision_count',0)
+                s['count']          += 1
 
         rows = []
         for vid, s in agg.items():
@@ -120,11 +121,12 @@ class MetricsCollector:
                     round(s['sum_sud_brakes']/c,2),
                     round(s['sum_max_decel']/c,2),
                     round(s['sum_avg_decel']/c,2),
+                    round(s['sum_lane_changes']/c,2),
                     round(s['sum_wait_tl']/c,2),
                     round(s['sum_collisions']/c,2),
                 ])
             else:
-                rows.append([vid] + ["N/A"] * 18)
+                rows.append([vid] + ["N/A"] * 20)
         return rows
 
     @staticmethod
