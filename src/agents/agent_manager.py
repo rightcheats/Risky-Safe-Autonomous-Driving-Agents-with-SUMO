@@ -1,16 +1,24 @@
 import random
 import traci
+from traci import TraCIException
 from .safe_driver import SafeDriver
 from .risky_driver import RiskyDriver
+from src.simulation.tls_recorder import TLSEventRecorder
 
 class AgentManager:
     def __init__(self):
         self.agents = []
-        # Predefined from_edge → to_edge route list
         self.valid_routes = [
             ("-100306119", "-102745233"),
             ("-100306144", "-1040796649#1"),
-            # …etc…
+            ("-1051388674#0", "-1052870930"),
+            ("-1052870931", "-1054937080#1"),
+            ("-1055385139#1", "-1065099801#1"),
+            ("-1065099802#1", "-1065201821#0"),
+            ("-493711858#1", "23120854#2"),
+            ("-49797451#0", "2483868#0"),
+            ("584351060", "-5067431#0"),
+            ("-5067431#1", "-510234237#1"),
         ]
         self.route_id = None
         self.destination_edge = None
@@ -23,7 +31,6 @@ class AgentManager:
         print(f"Route validation passed for {from_edge} → {to_edge}")
 
     def inject_agents(self):
-        # Select a random predefined route
         self.chosen_route_index = random.randint(1, len(self.valid_routes))
         from_edge, to_edge = self.valid_routes[self.chosen_route_index - 1]
         self.validate_route_edges(from_edge, to_edge)
@@ -36,7 +43,7 @@ class AgentManager:
         except traci.TraCIException:
             pass
 
-        # Create vehicles
+        # Create SUMO vehicles
         safe_id = "safe_1"
         risky_id = "risky_1"
         traci.vehicle.add(safe_id,  routeID=self.route_id, departSpeed="max", departLane="best")
@@ -45,19 +52,27 @@ class AgentManager:
         traci.vehicle.setColor(risky_id, (255, 0,   0))
         print(f"Injected agents on {self.route_id} (route #{self.chosen_route_index})")
 
-        # Instantiate agent wrappers
-        self.agents.append(SafeDriver(safe_id,  self.route_id))
-        self.agents.append(RiskyDriver(risky_id, self.route_id))
+        # Instantiate TLS recorders and wrap in driver logic
+        safe_recorder = TLSEventRecorder()
+        risky_recorder = TLSEventRecorder()
+        self.agents.append(SafeDriver(safe_id,  safe_recorder))
+        self.agents.append(RiskyDriver(risky_id, self.route_id, risky_recorder))
 
     def update_agents(self, step: int):
-        # 1) First, let each agent apply its driving logic
+        active = set(traci.vehicle.getIDList())
         for agent in self.agents:
-            agent.update()
+            vid = getattr(agent, 'vehicle_id', None) or getattr(agent, 'vid', None)
+            if vid in active:
+                agent.update()
 
-        # 2) Every 10 steps, if GUI is active, track the safe driver
+        # 2) Every 10 steps, try tracking the safe vehicle in the GUI,
+        #    but ignore if we're running headless or the vehicle has gone.
         if step % 10 == 0 and "safe_1" in traci.vehicle.getIDList():
-            if traci.hasGUI():
+            try:
                 traci.gui.trackVehicle("View #0", "safe_1")
+            except traci.TraCIException:
+                # GUI not available or vehicle has gone—ignore
+                pass
 
     def get_destination_edge(self):
         return self.destination_edge
