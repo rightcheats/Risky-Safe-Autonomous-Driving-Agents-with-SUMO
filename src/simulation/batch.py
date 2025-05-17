@@ -1,3 +1,5 @@
+# batch.py
+
 import os
 import time
 from src.simulation.simulation_runner import SimulationRunner
@@ -8,7 +10,7 @@ from src.io.csv_exporter import CsvExporter
 # Paths & SUMO settings
 SUMO_BINARY = "sumo"
 SUMO_CONFIG = os.path.join(os.path.dirname(__file__), '..', 'osm_data', 'osm.sumocfg')
-CSV_DIR     = os.path.join(os.path.dirname(__file__), 'csv_results')  
+CSV_DIR     = os.path.join(os.path.dirname(__file__), 'csv_results')
 
 def main(num_runs: int = 100):
     runner    = SimulationRunner(SUMO_BINARY, SUMO_CONFIG)
@@ -39,8 +41,9 @@ def main(num_runs: int = 100):
     exporter.to_file(
         os.path.join(CSV_DIR, 'simulation_per_run.csv'),
         headers=[
-            'Agent','Route','Time(steps)','Distance(m)','Speed(m/s)','Edges',
-            'TLS_enc','TLS_stops','TLS_wait(s)','Amber_enc','AvgWaitTL','Collisions'
+            'Agent','Route','Time(steps)','Distance(m)','Speed(m/s)','MaxSpeed(m/s)','Edges',
+            'TLS_enc','TLS_stops','TLS_wait(s)','Amber_enc','Red_enc',
+            'Amber_runs','Red_runs','AvgWaitTL','Collisions'
         ],
         rows=per_run_rows
     )
@@ -50,9 +53,9 @@ def main(num_runs: int = 100):
     exporter.to_file(
         os.path.join(CSV_DIR, 'simulation_averages.csv'),
         headers=[
-            'Agent','AvgTime(steps)','AvgDistance(m)','AvgSpeed(m/s)',
-            'AvgEdges','NumRuns','AvgTLS_enc','AvgTLS_stops',
-            'AvgTLS_wait(s)','AvgAmber_enc','AvgWaitTL','AvgCollisions'
+            'Agent','AvgTime(steps)','AvgDistance(m)','AvgSpeed(m/s)','AvgMaxSpeed(m/s)','AvgEdges',
+            'NumRuns','AvgTLS_enc','AvgTLS_stops','AvgTLS_wait(s)','AvgAmber_enc','AvgRed_enc',
+            'AvgAmber_runs','AvgRed_runs','AvgWaitTL','AvgCollisions'
         ],
         rows=avg_rows
     )
