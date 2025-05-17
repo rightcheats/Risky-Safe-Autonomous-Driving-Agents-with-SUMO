@@ -40,7 +40,7 @@ def main(num_runs: int = 100):
         os.path.join(CSV_DIR, 'simulation_per_run.csv'),
         headers=[
             'Agent','Route','Time(steps)','Distance(m)','Speed(m/s)','Edges',
-            'TLS_enc','TLS_stops','TLS_wait(s)','Amber_enc','AvgWaitTL'
+            'TLS_enc','TLS_stops','TLS_wait(s)','Amber_enc','AvgWaitTL','Collisions'
         ],
         rows=per_run_rows
     )
@@ -52,10 +52,10 @@ def main(num_runs: int = 100):
         headers=[
             'Agent','AvgTime(steps)','AvgDistance(m)','AvgSpeed(m/s)',
             'AvgEdges','NumRuns','AvgTLS_enc','AvgTLS_stops',
-            'AvgTLS_wait(s)','AvgAmber_enc','AvgWaitTL'
+            'AvgTLS_wait(s)','AvgAmber_enc','AvgWaitTL','AvgCollisions'
         ],
         rows=avg_rows
     )
 
 if __name__ == "__main__":
-    main(100)
+    main(10)

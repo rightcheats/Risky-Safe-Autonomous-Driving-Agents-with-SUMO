@@ -15,7 +15,7 @@ class SimulationRunner:
         self.step_length = step_length
 
     def run(self, agent_manager):
-        # Launch SUMO and inject
+        # Start SUMO and inject agents
         traci.start(self.cmd)
         agent_manager.inject_agents()
         dest = agent_manager.get_destination_edge()
@@ -34,6 +34,7 @@ class SimulationRunner:
                 'tls_wait_time': 0.0,
                 'amber_encountered': 0,
                 'prev_speed': None,
+                'collision_count': 0,  # NEW: collision counter
             }
 
         # Simulation loop
@@ -41,15 +42,22 @@ class SimulationRunner:
             traci.simulationStep()
             agent_manager.update_agents(step)
 
+            # fetch vehicles involved in collisions this step
+            colliding_vehicles = traci.simulation.getCollidingVehiclesIDList()
+
             for vid, rec in data.items():
                 if vid not in traci.vehicle.getIDList():
                     continue
+
+                # increment collision count if in collision list
+                if vid in colliding_vehicles:
+                    rec['collision_count'] += 1
 
                 # Distance & edges
                 rec['edges_visited'].add(traci.vehicle.getRoadID(vid))
                 rec['total_distance'] = traci.vehicle.getDistance(vid)
 
-                # traffic lights encountered
+                # Traffic lights encountered
                 tls_list = traci.vehicle.getNextTLS(vid)
                 for tls_data in tls_list:
                     tls_id, state, dist, *extra = tls_data
@@ -58,7 +66,7 @@ class SimulationRunner:
                         if 'y' in str(state).lower():
                             rec['amber_encountered'] += 1
 
-                # Wait time accumulation
+                # Wait time accumulation & stops
                 speed = traci.vehicle.getSpeed(vid)
                 prev = rec['prev_speed']
                 if prev is not None and prev > 0 and speed == 0:
