@@ -7,12 +7,17 @@ class SimulationRunner:
     """
     Starts a SUMO simulation, injects agents, steps through
     and collects raw per-agent data (journey + TLS metrics).
+    Uses TraCI's getAccumulatedWaitingTime to record total stopped time.
     """
     def __init__(self, sumo_binary: str, sumo_config: str,
                  max_steps: int = 3000, step_length: float = 1.0):
+        # configure SUMO to keep waiting‐time memory equal to the full run
+        mem = max_steps * step_length
         self.cmd = [
             sumo_binary, "-c", sumo_config,
-            "--start", "--no-warnings", "--no-step-log", "--quit-on-end"
+            "--start", "--no-warnings", "--no-step-log",
+            f"--waiting-time-memory", str(mem),
+            "--quit-on-end"
         ]
         self.max_steps = max_steps
         self.step_length = step_length
@@ -36,7 +41,6 @@ class SimulationRunner:
                     'edges_visited': set(),
                     'tls_encountered': set(),
                     'tls_stop_count': 0,
-                    'tls_wait_time': 0.0,
                     'amber_encountered': 0,
                     'red_encountered': 0,
                     'amber_run_count': 0,
@@ -50,14 +54,16 @@ class SimulationRunner:
                     'prev_speed': None,
                     'prev_lane': None,
                     'collision_count': 0,
+                    # we will fill this via getAccumulatedWaitingTime()
+                    'wait_time': 0.0,
                 }
 
             # simulation loop
             for step in range(self.max_steps):
                 traci.simulationStep()
                 agent_manager.update_agents(step)
-                colliding = traci.simulation.getCollidingVehiclesIDList()
 
+                colliding = traci.simulation.getCollidingVehiclesIDList()
                 for vid, rec in data.items():
                     if vid not in traci.vehicle.getIDList():
                         continue
@@ -91,12 +97,14 @@ class SimulationRunner:
                         last = rec['tls_last_state'].pop(tls_id)
                         if last == 'y':
                             rec['tls_stop_count'] += 1
-                        if last == 'r':
-                            rec['tls_wait_time'] += self.step_length
 
                     # speed, braking, lane changes
                     speed = traci.vehicle.getSpeed(vid)
+
+                    # track max speed
                     rec['max_speed'] = max(rec['max_speed'], speed)
+
+                    # braking metrics
                     if rec['prev_speed'] is not None:
                         decel = rec['prev_speed'] - speed
                         if decel > 0:
@@ -106,15 +114,26 @@ class SimulationRunner:
                                 rec['max_decel'] = max(rec['max_decel'], decel)
                     rec['prev_speed'] = speed
 
+                    # lane changes
                     lane = traci.vehicle.getLaneID(vid)
                     if rec['prev_lane'] is not None and lane != rec['prev_lane']:
                         rec['lane_change_count'] += 1
                     rec['prev_lane'] = lane
 
                     # reached destination?
-                    if not rec['reached'] and traci.vehicle.getRoadID(vid) == dest:
+                    if (not rec['reached']
+                            and traci.vehicle.getRoadID(vid) == dest):
                         rec['reached'] = True
                         rec['end_step'] = step
+
+                # end of for step
+
+            # after stepping, grab the accumulated waiting time for each vehicle
+            for vid, rec in data.items():
+                try:
+                    rec['wait_time'] = traci.vehicle.getAccumulatedWaitingTime(vid)
+                except traci.TraCIException:
+                    rec['wait_time'] = 0.0
 
         finally:
             try:
@@ -122,14 +141,13 @@ class SimulationRunner:
             except traci.TraCIException:
                 pass
 
-            # harvest TLS-event recorder metrics from agents
+            # harvest TLS‐event recorder metrics from agents
             for agent in agent_manager.agents:
                 vid = getattr(agent, 'vehicle_id', None) or getattr(agent, 'vid', None)
                 rec = data[vid]
-                # overwrite with recorder counts
                 rec['amber_encountered'] = agent.recorder.amber_encounters
-                rec['red_encountered'] = agent.recorder.red_encounters
-                rec['amber_run_count'] = agent.recorder.amber_runs
-                rec['red_run_count'] = agent.recorder.red_runs
+                rec['red_encountered']   = agent.recorder.red_encounters
+                rec['amber_run_count']   = agent.recorder.amber_runs
+                rec['red_run_count']     = agent.recorder.red_runs
 
         return data, route_idx

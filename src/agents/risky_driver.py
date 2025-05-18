@@ -20,7 +20,7 @@ class RiskyDriver(BaseAgent):
         # Buffer to delay braking relative to safe stopping distance (m)
         self.risky_buffer = 2.0
         # Dilemma zone for red-roll (m)
-        self.red_run_zone = 1.5
+        self.red_run_zone = 1.5 # CHANGE THIS BACK
         # Probability of “go” on close amber
         self.amber_go_prob = 0.7
         # Track last TLS state for fresh-red detection

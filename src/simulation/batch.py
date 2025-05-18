@@ -1,5 +1,3 @@
-# batch.py
-
 import os
 import time
 from src.simulation.simulation_runner import SimulationRunner
@@ -19,7 +17,7 @@ def main(num_runs: int = 100):
     all_runs = []
     successful = 0
 
-    for i in range(1, num_runs+1):
+    for i in range(1, num_runs + 1):
         print(f"\n>>> Starting simulation run {i}/{num_runs}")
         try:
             mgr = AgentManager()
@@ -40,11 +38,12 @@ def main(num_runs: int = 100):
     exporter.to_file(
         os.path.join(CSV_DIR, 'simulation_per_run.csv'),
         headers=[
-            'Agent','Route','Time(steps)','Distance(m)','Speed(m/s)','MaxSpeed(m/s)','Edges',
-            'TLS_enc','TLS_stops','TLS_wait(s)',
-            'Amber_enc','Red_enc','Amber_runs','Red_runs',
-            'Sudden_brakes','MaxDecel(m/s^2)','AvgDecel(m/s^2)',
-            'Lane_changes','AvgWaitTL','Collisions'
+            'Agent', 'Route', 'Time(steps)', 'Distance(m)', 'Speed(m/s)', 'MaxSpeed(m/s)', 'Edges',
+            'TLS_enc', 'Amber_enc', 'Red_enc', 'Amber_runs', 'Red_runs',
+            'Sudden_brakes', 'MaxDecel(m/s^2)', 'AvgDecel(m/s^2)',
+            'Lane_changes', 'Collisions',
+            # now in seconds
+            'WaitTime(s)'
         ],
         rows=per_rows
     )
@@ -54,14 +53,15 @@ def main(num_runs: int = 100):
     exporter.to_file(
         os.path.join(CSV_DIR, 'simulation_averages.csv'),
         headers=[
-            'Agent','AvgTime(steps)','AvgDistance(m)','AvgSpeed(m/s)','AvgMaxSpeed(m/s)','AvgEdges',
-            'NumRuns','AvgTLS_enc','AvgTLS_stops','AvgTLS_wait(s)',
-            'AvgAmber_enc','AvgRed_enc','AvgAmber_runs','AvgRed_runs',
-            'AvgSudden_brakes','AvgMaxDecel(m/s^2)','AvgAvgDecel(m/s^2)',
-            'AvgLane_changes','AvgWaitTL','AvgCollisions'
+            'Agent', 'AvgTime(steps)', 'AvgDistance(m)', 'AvgSpeed(m/s)', 'AvgMaxSpeed(m/s)', 'AvgEdges',
+            'NumRuns', 'AvgTLS_enc', 'AvgAmber_enc', 'AvgRed_enc', 'AvgAmber_runs', 'AvgRed_runs',
+            'AvgSudden_brakes', 'AvgMaxDecel(m/s^2)', 'AvgAvgDecel(m/s^2)',
+            'AvgLane_changes', 'AvgCollisions',
+            # now in seconds
+            'AvgWaitTime(s)'
         ],
         rows=avg_rows
     )
 
 if __name__ == "__main__":
-    main(100)
+    main(5)
