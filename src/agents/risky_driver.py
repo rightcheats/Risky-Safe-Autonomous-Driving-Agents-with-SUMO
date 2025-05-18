@@ -55,7 +55,7 @@ class RiskyDriver(BaseAgent):
         d_stop = (v**2) / (2 * self.a_c) if self.a_c > 0 else float('inf')
         d_risky = max(0.0, d_stop - self.risky_buffer)
 
-        print(f"[RiskyDriver] {self.vehicle_id}: TLS={tls_id}, raw_state={raw_state}, d={d:.2f}, v={v:.2f}, d_stop={d_stop:.2f}, d_risky={d_risky:.2f}")
+        # print(f"[RiskyDriver] {self.vehicle_id}: TLS={tls_id}, raw_state={raw_state}, d={d:.2f}, v={v:.2f}, d_stop={d_stop:.2f}, d_risky={d_risky:.2f}")
 
         # ────── GREEN ──────
         if 'g' in st:
