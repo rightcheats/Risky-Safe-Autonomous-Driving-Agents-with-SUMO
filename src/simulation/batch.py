@@ -42,7 +42,6 @@ def main(num_runs: int = 100):
             'TLS_enc', 'Amber_enc', 'Red_enc', 'Amber_runs', 'Red_runs',
             'Sudden_brakes', 'MaxDecel(m/s^2)', 'AvgDecel(m/s^2)',
             'Lane_changes', 'Collisions',
-            # now in seconds
             'WaitTime(s)'
         ],
         rows=per_rows
@@ -57,11 +56,10 @@ def main(num_runs: int = 100):
             'NumRuns', 'AvgTLS_enc', 'AvgAmber_enc', 'AvgRed_enc', 'AvgAmber_runs', 'AvgRed_runs',
             'AvgSudden_brakes', 'AvgMaxDecel(m/s^2)', 'AvgAvgDecel(m/s^2)',
             'AvgLane_changes', 'AvgCollisions',
-            # now in seconds
             'AvgWaitTime(s)'
         ],
         rows=avg_rows
     )
 
 if __name__ == "__main__":
-    main(100)
+    main(1)

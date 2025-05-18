@@ -25,9 +25,28 @@ class QTable:
         best = [a for a, q in zip(self.actions, q_vals) if q == max_q]
         return random.choice(best)
 
+#TODO: this is only for safedriver so rename this file/function
 def compute_reward(prev_state, action, new_state):
-    if prev_state[0] == 'red' and action == 'go':
-        return -1
-    if prev_state[0] == 'green' and action == 'go':
-        return +1
-    return 0
+    """
+    Returns a scalar reward for a transition (prev_state, action) → new_state.
+    """
+    phase = prev_state[0]
+
+    # heavy penalty for running a red
+    if phase == 'RED' and action == 'GO':
+        return -1.0
+    # reward correct go on green
+    if phase == 'GREEN' and action == 'GO':
+        return +1.0
+    # penalty for unnecessarily stopping on green
+    if phase == 'GREEN' and action == 'STOP':
+        return -0.5
+    # encourage cautious slow on amber
+    if phase == 'AMBER' and action == 'SLOW':
+        return +0.5
+    # discourage running through amber
+    if phase == 'AMBER' and action == 'GO':
+        return -0.5
+
+    return 0.0
+
