@@ -29,7 +29,7 @@ class SafeDriver:
 
         # Debug logging
         speed = traci.vehicle.getSpeed(self.vid)
-        print(f"[SafeDriver] {self.vid}: phase={phase}, dist={dist:.2f}, speed={speed:.2f}, state={self.state}")
+        # print(f"[SafeDriver] {self.vid}: phase={phase}, dist={dist:.2f}, speed={speed:.2f}, state={self.state}")
 
         # Handle amber transition
         if 'y' in phase and self.state == 'approach':
