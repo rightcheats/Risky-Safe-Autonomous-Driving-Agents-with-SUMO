@@ -24,6 +24,9 @@ class QTable:
         max_q = max(q_vals)
         best = [a for a, q in zip(self.actions, q_vals) if q == max_q]
         return random.choice(best)
+    
+    def decay_epsilon(self, decay_rate: float, min_epsilon: float = 0.01):
+        self.epsilon = max(min_epsilon, self.epsilon * decay_rate)
 
 #TODO: this is only for safedriver so rename this file/function
 def compute_reward(prev_state, action, new_state):

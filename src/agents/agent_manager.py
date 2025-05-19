@@ -8,6 +8,8 @@ from src.simulation.tls_recorder import TLSEventRecorder
 class AgentManager:
     def __init__(self):
         self.agents = []
+        self.safe_driver  = None
+        self.risky_driver = None
         self.valid_routes = [
             ("-100306119", "-102745233"),
             ("-100306144", "-1040796649#1"),
@@ -58,6 +60,13 @@ class AgentManager:
         self.agents.append(SafeDriver(safe_id,  safe_recorder))
         self.agents.append(RiskyDriver(risky_id, self.route_id, risky_recorder))
 
+        # create/store references for q learning
+        self.safe_driver = SafeDriver(safe_id, safe_recorder)
+        self.risky_driver = RiskyDriver(risky_id,self.route_id, risky_recorder)
+        # keep generic list if iterate over
+        self.agents.append(self.safe_driver)
+        self.agents.append(self.risky_driver)
+
     def update_agents(self, step: int):
         active = set(traci.vehicle.getIDList())
         for agent in self.agents:
@@ -65,13 +74,11 @@ class AgentManager:
             if vid in active:
                 agent.update()
 
-        # 2) Every 10 steps, try tracking the safe vehicle in the GUI,
-        #    but ignore if we're running headless or the vehicle has gone.
+        # every 10 steps, try tracking the safe vehicle in the GUI (ignore if headless/no gui)
         if step % 10 == 0 and "safe_1" in traci.vehicle.getIDList():
             try:
                 traci.gui.trackVehicle("View #0", "safe_1")
             except traci.TraCIException:
-                # GUI not available or vehicle has gone—ignore
                 pass
 
     def get_destination_edge(self):
@@ -79,3 +86,15 @@ class AgentManager:
 
     def get_route_label(self):
         return self.chosen_route_index
+    
+    def decay_exploration(self, decay_rate: float = 0.99, min_epsilon: float = 0.05):
+        """
+        Apply epsilon decay to the safe driver's Q-table after each simulation run.
+        """
+        if self.safe_driver and self.safe_driver.qtable:
+            old_eps = self.safe_driver.qtable.epsilon
+            self.safe_driver.qtable.epsilon = max(min_epsilon, old_eps * decay_rate)
+            # Reset episode-specific memory
+            self.safe_driver.prev_state = None
+            self.safe_driver.last_action = None
+            print(f"ε decayed: {old_eps:.3f} → {self.safe_driver.qtable.epsilon:.3f}")

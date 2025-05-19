@@ -24,6 +24,10 @@ def main(num_runs: int = 100):
             run_data, route_idx = runner.run(mgr)
             all_runs.append((run_data, route_idx))
             successful += 1
+
+            # decay eploration after each run
+            mgr.decay_exploration(decay_rate=0.99, min_epsilon=0.05)
+
             time.sleep(0.5)
         except Exception as e:
             print(f"[Run {i}] Error: {e}")
