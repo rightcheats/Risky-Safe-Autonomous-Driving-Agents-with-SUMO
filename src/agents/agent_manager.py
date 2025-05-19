@@ -54,18 +54,25 @@ class AgentManager:
         traci.vehicle.setColor(risky_id, (255, 0,   0))
         print(f"Injected agents on {self.route_id} (route #{self.chosen_route_index})")
 
-        # Instantiate TLS recorders and wrap in driver logic
-        safe_recorder = TLSEventRecorder()
-        risky_recorder = TLSEventRecorder()
-        self.agents.append(SafeDriver(safe_id,  safe_recorder))
-        self.agents.append(RiskyDriver(risky_id, self.route_id, risky_recorder))
+        # create or reuse safedriver = q-table persists across runs
+        if self.safe_driver is None:
+            safe_recorder = TLSEventRecorder()                     
+            self.safe_driver = SafeDriver(safe_id, safe_recorder) # instantiate once
+            self.agents.append(self.safe_driver)                  
+        else:
+            # reuse existing instance, reset episode state
+            self.safe_driver.vid = safe_id                        
+            self.safe_driver.prev_state = None                    
+            self.safe_driver.last_action = None                   
 
-        # create/store references for q learning
-        self.safe_driver = SafeDriver(safe_id, safe_recorder)
-        self.risky_driver = RiskyDriver(risky_id,self.route_id, risky_recorder)
-        # keep generic list if iterate over
-        self.agents.append(self.safe_driver)
-        self.agents.append(self.risky_driver)
+        # create or reuse riskydriver
+        if self.risky_driver is None:
+            risky_recorder = TLSEventRecorder()                    
+            self.risky_driver = RiskyDriver(risky_id, self.route_id, risky_recorder)  
+            self.agents.append(self.risky_driver)                 
+        else:
+            # reuse existing instance, update vid
+            self.risky_driver.vid = risky_id                      
 
     def update_agents(self, step: int):
         active = set(traci.vehicle.getIDList())
