@@ -4,7 +4,7 @@ import pytest
 # ensure Python can import from src/
 sys.path.insert(0, "src")
 
-from agents.learning.q_learning import QTable
+from agents.learning.rewards import QTable
 
 def test_choose_max_q_action():
     qt = QTable(actions=['stop','go','slow'], epsilon=0.0)
