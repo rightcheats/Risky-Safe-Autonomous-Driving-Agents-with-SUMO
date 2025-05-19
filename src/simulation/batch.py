@@ -2,6 +2,7 @@ import os
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from src.simulation.simulation_runner import SimulationRunner
 from src.agents.agent_manager import AgentManager
@@ -69,31 +70,48 @@ def main(num_runs: int = 100):
 
     df_q = pd.DataFrame(records)
 
-    # NEW: plot Q-values vs distance for each (phase, speed_bin)
-    actions = qt.actions
-    phases = df_q['phase'].unique()
-    speed_bins = sorted(df_q['speed_bin'].unique())
+    #NEW: single 3×3 heatmap grid of Q-values (rows=phase, cols=speed_bin)
+    import seaborn as sns  #NEW: use seaborn for heatmaps
+    phases = ['GREEN','AMBER','RED']
+    speed_bins = [0,1,2]
+    dist_labels = ["0-10","10-20","20-40",">40"]
 
-    for phase in phases:
-        for speed in speed_bins:
-            sub = df_q[(df_q['phase'] == phase) & (df_q['speed_bin'] == speed)]
+    speed_labels = {
+    0: "Stopped (0 m/s)",
+    1: "Slow (0-5 m/s)",
+    2: "Cruise (>5 m/s)"
+    }   
+
+    fig, axes = plt.subplots(len(phases), len(speed_bins),
+                             figsize=(12, 9), sharex=True, sharey=True)
+    for i, phase in enumerate(phases):
+        for j, speed in enumerate(speed_bins):
+            ax = axes[i, j]
+            # pivot into distance × actions matrix
+            sub = df_q[(df_q.phase == phase) & (df_q.speed_bin == speed)]
             if sub.empty:
+                ax.axis('off')
                 continue
             pivot = sub.pivot(index='dist_bin', columns='action', values='Q_value')
-            plt.figure()
-            for action in actions:
-                if action in pivot:
-                    plt.plot(pivot.index, pivot[action], marker='o', label=action)
-            plt.title(f"Q-values vs Distance — {phase}, speed_bin={speed}")       
-            plt.xlabel("Distance Bin")                                           
-            plt.ylabel("Q-value")                                                
-            plt.xticks([0,1,2,3], ["0–10","10–20","20–40",">40"])                
-            plt.legend(title="Action")                                          
-            plt.grid(True)                                                      
-            plt.tight_layout()                                                  
-            qv_path = os.path.join(CSV_DIR, f"Q_{phase}_spd{speed}.png")        
-            plt.savefig(qv_path)                                               
-            print(f"[Plot] Q-values for {phase}, speed_bin={speed} saved to {qv_path}")  
+            # ensure columns in correct order
+            pivot = pivot[qt.actions]
+            sns.heatmap(pivot, annot=True, fmt=".2f", cbar=(j==len(speed_bins)-1),
+                        xticklabels=qt.actions, yticklabels=dist_labels,
+                        ax=ax, cmap="viridis")
+            if i == 0:
+                ax.set_title(speed_labels[speed])
+            if j == 0:
+                ax.set_ylabel(phase)
+            else:
+                ax.set_ylabel('')
+    fig.suptitle("Q-values Heatmap\n(rows = traffic light phase, columns = speed bin, y = distance bin, x = action)", y=0.92)
+    for ax in axes.flat:
+        ax.set_xlabel('')
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+    plt.tight_layout(rect=[0,0,1,0.90])
+    heatmap_path = os.path.join(CSV_DIR, "Q_heatmap_grid.png")  #NEW
+    plt.savefig(heatmap_path)  #NEW
+    print(f"[Plot] Q-values heatmap grid saved to {heatmap_path}")  #NEW
 
     # per run csv
     per_rows = []
