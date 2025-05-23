@@ -120,22 +120,38 @@ class AgentManager:
     def get_route_label(self) -> int:
         return self.chosen_route_index
 
-    def decay_exploration(
-        self, decay_rate: float = 0.99, min_epsilon: float = 0.01
-    ) -> None:
+    def decay_exploration(self) -> None:
         """
-        Apply ε-decay to both safe and risky drivers and reset their
-        episode-specific memory.
+        Apply **agent-specific exponential** ε-decay schedules:
+        - RiskyDriver: ε₀=0.99 → εₘᵢₙ=0.10 over 100 episodes
+        - SafeDriver:  ε₀=0.99 → εₘᵢₙ=0.01 over 50 episodes
+        Resets each driver’s episode memory afterward.
         """
-        for driver in (self.safe_driver, self.risky_driver):
-            if driver and hasattr(driver, "qtable"):
-                old_eps = driver.qtable.epsilon
-                driver.qtable.epsilon = max(min_epsilon, old_eps * decay_rate)
-                driver.prev_state  = None
-                driver.last_action = None
-                logger.info(
-                    "Epsilon decayed for %s: %.3f → %.3f",
-                    driver.__class__.__name__,
-                    old_eps,
-                    driver.qtable.epsilon,
-                )
+        # targets and horizons
+        e0, min_risky, runs_risky = 0.99, 0.10, 100
+        _,    min_safe,  runs_safe  = 0.99, 0.01,  50
+
+        # compute decay rates so that e0 * decay_rate**n = εₘᵢₙ
+        decay_risky = (min_risky / e0) ** (1.0 / runs_risky)
+        decay_safe  = (min_safe  / e0) ** (1.0 / runs_safe)
+
+        # RiskyDriver decay
+        old = self.risky_driver.qtable.epsilon
+        self.risky_driver.qtable.decay_epsilon(decay_rate=decay_risky,
+                                            min_epsilon=min_risky)
+        logger.info("RiskyDriver ε: %.4f → %.4f", old,
+                    self.risky_driver.qtable.epsilon)
+        # reset episode state
+        self.risky_driver.prev_state = None
+        self.risky_driver.last_action = None
+
+        # SafeDriver decay
+        old = self.safe_driver.qtable.epsilon
+        self.safe_driver.qtable.decay_epsilon(decay_rate=decay_safe,
+                                            min_epsilon=min_safe)
+        logger.info("SafeDriver ε: %.4f → %.4f", old,
+                    self.safe_driver.qtable.epsilon)
+        # reset episode state
+        self.safe_driver.prev_state = None
+        self.safe_driver.last_action = None
+
