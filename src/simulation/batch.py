@@ -72,16 +72,24 @@ def main(num_runs: int = 100):
     # dataframe of q values for heatmap
     def build_q_df(qtable):
         records = []
-        for (phase, dist_b, speed_b), qvals in qtable.Q.items():
+        for (phase, dist_b, speed_b, _ttl_b), qvals in qtable.Q.items():
             for action, q in zip(qtable.actions, qvals):
                 records.append({
-                    "phase": phase,
+                    "phase":    phase,
                     "dist_bin": dist_b,
                     "speed_bin": speed_b,
-                    "action": action,
-                    "Q_value": q
+                    "action":   action,
+                    "Q_value":  q
                 })
-        return pd.DataFrame(records)
+
+        df = pd.DataFrame(records)
+        df = df.groupby(
+            ["phase", "dist_bin", "speed_bin", "action"],
+            as_index=False
+        )["Q_value"].mean()
+
+        return df
+
 
     qt_safe    = mgr.safe_driver.qtable
     df_q_safe  = build_q_df(qt_safe)
@@ -191,4 +199,4 @@ def main(num_runs: int = 100):
     )
 
 if __name__ == "__main__":
-    main(5)
+    main(100)

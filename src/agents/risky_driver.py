@@ -28,7 +28,12 @@ class RiskyDriver(QLearningDriver):
             epsilon=1.0,
         )
         self.route = route
-        self.last_tls_state = None  # for event recording
+        self.last_tls_state = None  # event recording
+
+        # tuneable motion parameters
+        self.a_c = 4.5
+        self.a_max = 2.6
+        self.accel_duration = 1.0 
 
     def encode_state(self) -> tuple[str,int,int,int]:
         """

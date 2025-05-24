@@ -104,11 +104,12 @@ class AgentManager:
                 agent.update()
 
         # force cam to follow safe, replace with risky_1 if desired
-        if step % 10 == 0 and "safe_1" in active:
-            try:
-                traci.gui.trackVehicle("View #0", "safe_1")
-            except TraCIException:
-                pass
+        #TODO: wrap so errors dont keep appearing
+        # if step % 10 == 0 and "safe_1" in active:
+        #     try:
+        #         traci.gui.trackVehicle("View #0", "safe_1")
+        #     except TraCIException:
+        #         pass
 
     def get_destination_edge(self) -> str:
         return self.destination_edge
