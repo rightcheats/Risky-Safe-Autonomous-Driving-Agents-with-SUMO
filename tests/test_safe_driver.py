@@ -6,13 +6,8 @@ import src.agents.safe_driver as safe_mod
 
 @pytest.fixture(autouse=True)
 def setup_traci(monkeypatch):
-    """
-    Stub out all TraCI calls SafeDriver.update() may invoke.
-    By default:
-      - getSpeed() → 5.0 m/s
-      - getMaxSpeed() → 15.0 m/s
-      - slowDown(...) and setSpeed(...) are no-ops (can be overridden per-test)
-    """
+
+    # stub out traci calls
     monkeypatch.setattr(safe_mod.traci.vehicle, "getSpeed", lambda vid: 5.0)
     monkeypatch.setattr(safe_mod.traci.vehicle, "getMaxSpeed", lambda vid: 15.0)
     monkeypatch.setattr(safe_mod.traci.vehicle, "slowDown", lambda *args, **kwargs: None)
@@ -23,7 +18,7 @@ def test_slow_on_amber(setup_traci):
     recorder = TLSEventRecorder()
     driver = SafeDriver("v1", recorder)
 
-    # Simulate an amber light 10 m ahead
+    # simulate amber 10m
     setup_traci.setattr(
         safe_mod.traci.vehicle,
         "getNextTLS",
@@ -47,7 +42,7 @@ def test_stop_on_red_decelerate(setup_traci):
     recorder = TLSEventRecorder()
     driver = SafeDriver("v1", recorder)
 
-    # Amber-first tracking not relevant here; simulate red 5 m ahead
+    # simulate red 5m ahead
     setup_traci.setattr(
         safe_mod.traci.vehicle,
         "getNextTLS",
@@ -63,8 +58,7 @@ def test_stop_on_red_decelerate(setup_traci):
 
     driver.update()
 
-    # DECEL_RED = 4.5 → stopping distance ~ (5²)/(2·4.5)=2.78; +0.5 margin=3.28, 
-    # and 5.0>3.28 so it should decelerate, not emergency-stop
+    # shouldn't emergency stop
     assert recorder.red_encounters == 1
     assert driver.state == "stopped"
     assert calls == [("v1", 0.0, SafeDriver.DECEL_RED)]
@@ -73,7 +67,7 @@ def test_emergency_stop_on_red(setup_traci):
     recorder = TLSEventRecorder()
     driver = SafeDriver("v1", recorder)
 
-    # Make dist small enough to trigger emergency stop
+    # trigger emergency stop
     setup_traci.setattr(
         safe_mod.traci.vehicle,
         "getNextTLS",
@@ -98,7 +92,7 @@ def test_passing_on_green_after_red(setup_traci):
     driver = SafeDriver("v1", recorder)
     driver.state = "stopped"
 
-    # Now simulate green
+    # simulate green
     setup_traci.setattr(
         safe_mod.traci.vehicle,
         "getNextTLS",
@@ -115,14 +109,14 @@ def test_passing_on_green_after_red(setup_traci):
     driver.update()
 
     assert driver.state == "passing"
-    assert calls == [("v1", 15.0)]  # 15.0 is our stubbed getMaxSpeed()
+    assert calls == [("v1", 15.0)]
 
 def test_reset_to_approach_after_passing(setup_traci):
     recorder = TLSEventRecorder()
     driver = SafeDriver("v1", recorder)
     driver.state = "passing"
 
-    # Negative dist < -2.0 should reset to 'approach'
+    # negative dist = approach
     setup_traci.setattr(
         safe_mod.traci.vehicle,
         "getNextTLS",

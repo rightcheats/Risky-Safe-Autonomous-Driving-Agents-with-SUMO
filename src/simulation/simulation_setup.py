@@ -3,6 +3,8 @@ import sys
 import traci
 from agents.agent_manager import AgentManager
 
+#NOTE: prev used for testing, now obsolete, will delete
+
 if "SUMO_HOME" not in os.environ:
     sys.exit("SUMO_HOME is not set. Please check your environment variables.")
 
@@ -13,7 +15,6 @@ def run_simulation():
     traci.start([sumo_binary, "-c", sumo_config])
     agent_manager = AgentManager()
     
-    # Inject agents only after starting the simulation so that we can access the full network edges list.
     try:
         agent_manager.inject_agents()
     except Exception as e:
@@ -40,7 +41,7 @@ def run_simulation():
         },
     }
 
-    max_steps = 3000  # safety limit
+    max_steps = 3000
     step = 0
     while step < max_steps:
         traci.simulationStep()
@@ -57,14 +58,14 @@ def run_simulation():
                     agents[vid]["reached"] = True
 
         if all(agents[vid]["reached"] for vid in agents):
-            print("Both agents reached the destination.")
+            print("Both agents arrived at destination! :D")
             break
 
         step += 1
 
     traci.close()
 
-    print("\n=== Simulation Results ===")
+    print("\n>>> Simulation Results")
     for vid, data in agents.items():
         if data["end_step"] is not None:
             journey_time = data["end_step"] - data["start_step"]
@@ -78,7 +79,7 @@ def run_simulation():
         else:
             print(f"\nAgent: {vid} did not reach the destination.")
 
-    print("\nSimulation finished!")
+    print("\n>>> Simulation finished")
 
 if __name__ == "__main__":
     run_simulation()

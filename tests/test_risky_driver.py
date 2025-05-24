@@ -1,20 +1,25 @@
 import pytest
 import random
 import traci
+
 from src.agents.risky_driver import RiskyDriver
 from src.simulation.tls_recorder import TLSEventRecorder
+
+#TODO: update to reflect new stuff
 
 @pytest.fixture(autouse=True)
 def stub_traci(monkeypatch):
     calls = {"setSpeed": [], "setAcceleration": [], "setDecel": []}
-    # Vehicle queries
+    # vehicle queries
     monkeypatch.setattr(traci.vehicle, "getSpeed", lambda vid: 5.0)
     monkeypatch.setattr(traci.vehicle, "getMaxSpeed", lambda vid: 15.0)
-    # Vehicle actions
+
+    # vehicle actions
     monkeypatch.setattr(traci.vehicle, "setSpeed", lambda vid, spd: calls["setSpeed"].append((vid, spd)))
     monkeypatch.setattr(traci.vehicle, "setAcceleration", lambda vid, acc, dur: calls["setAcceleration"].append((vid, acc, dur)))
     monkeypatch.setattr(traci.vehicle, "setDecel", lambda vid, dec: calls["setDecel"].append((vid, dec)))
-    # Default traffic-light state
+
+    # default tls state
     monkeypatch.setattr(traci.trafficlight, "getRedYellowGreenState", lambda tls_id: "gggg")
     return calls
 
@@ -51,23 +56,25 @@ def test_amber_far_runs(stub_traci, stub_random):
 def test_amber_close_gamble_go_and_stop(stub_traci, stub_random):
     rec = TLSEventRecorder()
     d = RiskyDriver("v1", "route", rec)
-    # Distance <= d_risky (~0.78) triggers gamble branch
+
+    # distance triggers gamble branch
     pytest.MonkeyPatch().setattr(traci.vehicle, "getNextTLS", lambda v: make_tls("yryr", 0.5))
     stub_random.setattr(traci.trafficlight, "getRedYellowGreenState", lambda tls_id: "yryr")
-    # Case 1: random < amber_go_prob → go
+
+    # scenario 1: random < amber_go_prob -> go
     stub_random.setattr(random, "random", lambda: d.amber_go_prob - 0.1)
     d.update()
     assert stub_traci["setSpeed"] == [("v1", 15.0)]
     assert rec.amber_runs == 1
-    # Reset
+    # reset
     stub_traci["setSpeed"].clear()
     rec.amber_runs = 0
-    # Case 2: random >= amber_go_prob → stop
+
+    # scenario 2: random >= amber_go_prob -> stop
     stub_random.setattr(random, "random", lambda: d.amber_go_prob + 0.1)
     d.update()
     assert stub_traci["setDecel"] == [("v1", d.a_c)]
     assert rec.amber_runs == 0
-
 
 def test_red_fresh_roll_and_brake(stub_traci, stub_random):
     rec = TLSEventRecorder()
@@ -78,7 +85,7 @@ def test_red_fresh_roll_and_brake(stub_traci, stub_random):
     d.update()
     assert stub_traci["setSpeed"] == [("v1", 15.0)]
     assert rec.red_runs == 1
-    # Reset
+    # reset
     stub_traci["setSpeed"].clear()
     rec.red_runs = 0
     pytest.MonkeyPatch().setattr(traci.vehicle, "getNextTLS", lambda v: make_tls("rrrr", 5.0))

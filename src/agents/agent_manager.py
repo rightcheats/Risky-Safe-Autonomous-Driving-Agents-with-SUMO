@@ -1,8 +1,5 @@
-# src/agents/agent_manager.py
-
 import random
 import logging
-
 import traci
 from traci import TraCIException
 
@@ -12,18 +9,20 @@ from src.simulation.tls_recorder import TLSEventRecorder
 
 logger = logging.getLogger(__name__)
 
-
 class AgentManager:
     """
-    Manages creation, injection, updating, and exploration‐decay
-    for SafeDriver and RiskyDriver agents in the SUMO simulation.
+    Manages both agents in: 
+        - creation 
+        - injection 
+        - updating 
+        - epsilon-decay
     """
 
     def __init__(self):
         self.agents = []
         self.safe_driver = None
         self.risky_driver = None
-        self.valid_routes = [
+        self.valid_routes = [ # manually chose 10 routes that span the map for training
             ("-100306119", "-102745233"),
             ("-100306144", "-1040796649#1"),
             ("-1051388674#0", "-1052870930"),
@@ -34,7 +33,7 @@ class AgentManager:
             ("-49797451#0", "2483868#0"),
             ("584351060", "-5067431#0"),
             ("-5067431#1", "-510234237#1"),
-        ]
+        ] #TODO: add more routes? automatic routing? 
         self.chosen_route_index = None
         self.route_id = None
         self.destination_edge = None
@@ -46,7 +45,6 @@ class AgentManager:
         logger.info("Route validation passed for %s → %s", from_edge, to_edge)
 
     def inject_agents(self) -> None:
-        # Pick and validate a random route
         self.chosen_route_index = random.randint(1, len(self.valid_routes))
         from_edge, to_edge = self.valid_routes[self.chosen_route_index - 1]
         self.validate_route_edges(from_edge, to_edge)
@@ -58,10 +56,9 @@ class AgentManager:
             traci.route.add(self.route_id, [from_edge, to_edge])
         except TraCIException:
             pass
-
-        # Add two SUMO vehicles
+        
         safe_id, risky_id = "safe_1", "risky_1"
-        for vid, color in ((safe_id, (0, 0, 255)), (risky_id, (255, 0, 0))):
+        for vid, color in ((safe_id, (0, 0, 255)), (risky_id, (255, 0, 0))): # safe = blue, risky = red
             traci.vehicle.add(
                 vid,
                 routeID=self.route_id,
@@ -70,31 +67,30 @@ class AgentManager:
             )
             traci.vehicle.setColor(vid, color)
 
+        #TODO: sort logging out
         logger.info(
             "Injected agents on %s (route #%d)",
             self.route_id,
             self.chosen_route_index,
         )
 
-        # SafeDriver instantiation / reuse
+        # safedriver instantiation / reuse
         if self.safe_driver is None:
             recorder = TLSEventRecorder()
             self.safe_driver = SafeDriver(safe_id, recorder)
             self.agents.append(self.safe_driver)
         else:
-            # reuse existing instance, reset only episode-specific state & recorder
             self.safe_driver.vehicle_id  = safe_id
             self.safe_driver.prev_state  = None
             self.safe_driver.last_action = None
             self.safe_driver.recorder    = TLSEventRecorder()
 
-        # RiskyDriver instantiation / reuse
+        # riskydriver instantiation / reuse
         if self.risky_driver is None:
             recorder = TLSEventRecorder()
             self.risky_driver = RiskyDriver(risky_id, self.route_id, recorder)
             self.agents.append(self.risky_driver)
         else:
-            # reuse existing instance, reset only episode-specific state & recorder
             self.risky_driver.vehicle_id  = risky_id
             self.risky_driver.prev_state  = None
             self.risky_driver.last_action = None
@@ -107,7 +103,7 @@ class AgentManager:
             if vid in active:
                 agent.update()
 
-        # Try to keep the GUI focused on the safe agent every 10 steps
+        # force cam to follow safe, replace with risky_1 if desired
         if step % 10 == 0 and "safe_1" in active:
             try:
                 traci.gui.trackVehicle("View #0", "safe_1")
@@ -122,20 +118,20 @@ class AgentManager:
 
     def decay_exploration(self) -> None:
         """
-        Apply **agent-specific exponential** ε-decay schedules:
-        - RiskyDriver: ε₀=0.99 → εₘᵢₙ=0.10 over 100 episodes
-        - SafeDriver:  ε₀=0.99 → εₘᵢₙ=0.01 over 50 episodes
-        Resets each driver’s episode memory afterward.
+        Apply agent-specific epsilon-decay schedules:
+        - RiskyDriver: epsilon_0 = 0.99 -> epsilon_min = 0.10 over 100 episodes
+        - SafeDriver:  epsilon_0 = 0.99 -> epsilon_min = 0.01 over 50 episodes
+        Resets each drivers episode memory afterward.
         """
-        # targets and horizons
+        # targets & horizons
         e0, min_risky, runs_risky = 0.99, 0.10, 100
-        _,    min_safe,  runs_safe  = 0.99, 0.01,  50
+        _, min_safe, runs_safe = 0.99, 0.01,  50
 
-        # compute decay rates so that e0 * decay_rate**n = εₘᵢₙ
+        # compute decay rates 
         decay_risky = (min_risky / e0) ** (1.0 / runs_risky)
         decay_safe  = (min_safe  / e0) ** (1.0 / runs_safe)
 
-        # RiskyDriver decay
+        # riskydriver decay
         old = self.risky_driver.qtable.epsilon
         self.risky_driver.qtable.decay_epsilon(decay_rate=decay_risky,
                                             min_epsilon=min_risky)
@@ -145,7 +141,7 @@ class AgentManager:
         self.risky_driver.prev_state = None
         self.risky_driver.last_action = None
 
-        # SafeDriver decay
+        # safedriver decay
         old = self.safe_driver.qtable.epsilon
         self.safe_driver.qtable.decay_epsilon(decay_rate=decay_safe,
                                             min_epsilon=min_safe)

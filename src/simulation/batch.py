@@ -16,22 +16,23 @@ SUMO_CONFIG = os.path.join(
     "osm_data",
     "osm.sumocfg"
 )
+
 CSV_DIR = os.path.join(os.path.dirname(__file__), "csv_results")
 
 
 def main(num_runs: int = 100):
-    # ensure output directory exists
+
     os.makedirs(CSV_DIR, exist_ok=True)
 
-    runner    = SimulationRunner(SUMO_BINARY, SUMO_CONFIG)
+    runner = SimulationRunner(SUMO_BINARY, SUMO_CONFIG)
     collector = MetricsCollector()
-    exporter  = CsvExporter()
-    mgr       = AgentManager()
+    exporter = CsvExporter()
+    mgr = AgentManager()
 
-    eps_history_safe   = []
-    eps_history_risky  = []
-    all_runs           = []
-    successful         = 0
+    eps_history_safe = []
+    eps_history_risky = []
+    all_runs = []
+    successful = 0
 
     for i in range(1, num_runs + 1):
         print(f"\n>>> Starting simulation run {i}/{num_runs}")
@@ -40,7 +41,7 @@ def main(num_runs: int = 100):
             all_runs.append((run_data, route_idx))
             successful += 1
 
-            # agent-specific exponential decay (no args)
+            # agent-specific exponential decay
             mgr.decay_exploration()
             eps_history_safe.append(mgr.safe_driver.qtable.epsilon)
             eps_history_risky.append(mgr.risky_driver.qtable.epsilon)
@@ -52,22 +53,23 @@ def main(num_runs: int = 100):
 
     print(f"\n>>> Completed {successful}/{num_runs} runs.")
 
-    # Plot ε-decay over runs for both drivers
+    # FIGURE: epsilon-decay over runs for both drivers
     plt.figure()
     runs = list(range(1, len(eps_history_safe) + 1))
     plt.plot(runs, eps_history_safe,  marker="o", label="SafeDriver")
     plt.plot(runs, eps_history_risky, marker="x", label="RiskyDriver")
     plt.title("Exploration Rate Decay over Runs")
     plt.xlabel("Simulation Run")
-    plt.ylabel("ε")
+    plt.ylabel("ε (epsilon)")
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
     eps_path = os.path.join(CSV_DIR, "epsilon_decay.png")
     plt.savefig(eps_path)
-    print(f"[Plot] ε-decay saved to {eps_path}")
+    print(f"[Plot] epsilon-decay saved to {eps_path}")
 
-    # build a DataFrame of Q-values for heatmaps
+    # --- FIGURE: heatmaps for q values per agent 
+    # dataframe of q values for heatmap
     def build_q_df(qtable):
         records = []
         for (phase, dist_b, speed_b), qvals in qtable.Q.items():
@@ -81,11 +83,9 @@ def main(num_runs: int = 100):
                 })
         return pd.DataFrame(records)
 
-    # SafeDriver heatmap
     qt_safe    = mgr.safe_driver.qtable
     df_q_safe  = build_q_df(qt_safe)
 
-    # RiskyDriver heatmap
     qt_risky   = mgr.risky_driver.qtable
     df_q_risky = build_q_df(qt_risky)
 
@@ -138,7 +138,7 @@ def main(num_runs: int = 100):
                     ax.set_ylabel(phase)
                 else:
                     ax.set_ylabel("")
-        fig.suptitle(
+        fig.suptitle( #TODO: change this to be better names?
             f"{title}\n"
             "(rows = TLS phase, columns = speed bin,\n"
             " y-axis = distance bin, x-axis = action)",
@@ -152,7 +152,6 @@ def main(num_runs: int = 100):
         plt.savefig(out_path)
         print(f"[Plot] {title} saved to {out_path}")
 
-    # Generate and save both heatmaps
     plot_q_heatmap(
         df_q_safe, qt_safe,
         title="SafeDriver Q-Values Heatmap",
@@ -164,7 +163,7 @@ def main(num_runs: int = 100):
         out_filename="Q_heatmap_grid_risky.png"
     )
 
-    # Export per-run CSV
+    # export csvs
     per_rows = []
     for data, ridx in all_runs:
         per_rows += collector.summarise_run(data, ridx)
@@ -178,8 +177,6 @@ def main(num_runs: int = 100):
         ],
         rows=per_rows
     )
-
-    # Export averages CSV
     avg_rows = collector.compute_averages(all_runs)
     exporter.to_file(
         os.path.join(CSV_DIR, "simulation_averages.csv"),
@@ -193,6 +190,5 @@ def main(num_runs: int = 100):
         rows=avg_rows
     )
 
-
 if __name__ == "__main__":
-    main(100)
+    main(5)

@@ -2,7 +2,7 @@ import pytest
 from src.simulation.batch import main                     
 from src.io.csv_exporter import CsvExporter      
 
-# ── Dummy runner returning every key summarise_run needs ──
+# Dummy runner = returns every key summarise_run 
 class DummyRunner:
     def __init__(self, *args, **kwargs):
         pass
@@ -25,9 +25,9 @@ class DummyRunner:
             'red_run_count': 0,
             'lane_change_count': 0,
             'collision_count': 0,
-            # must match the key your code actually uses
             'wait_time': 7.0
         }
+
         # identical dict for both agents
         return {'safe_1': base.copy(), 'risky_1': base.copy()}, 42
 
@@ -41,14 +41,13 @@ def capture_csv(monkeypatch):
     calls = []
     def fake_to_file(self, path, headers, rows):
         calls.append(rows)
-    # include `self` to match the real signature
     monkeypatch.setattr(CsvExporter, "to_file", fake_to_file)
     return calls
 
 def test_batch_exports_waiting_time(capture_csv):
     main(num_runs=1)
-    # two writes: per-run and averages
+    # per-run and averages
     assert len(capture_csv) == 2
     per_run_rows = capture_csv[0]
-    # summarise_run rounds rec['wait_time'] into the last column :contentReference[oaicite:8]{index=8}:contentReference[oaicite:9]{index=9}
+    # summarise_run rounds wait time into the last column
     assert any(row[-1] == 7.0 for row in per_run_rows)

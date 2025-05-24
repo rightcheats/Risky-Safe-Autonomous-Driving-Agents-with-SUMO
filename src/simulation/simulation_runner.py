@@ -1,17 +1,15 @@
 import traci
 
-# threshold in m/s² above which we call it sudden braking
 SUDDEN_BRAKE_THRESHOLD = 3.0
 
 class SimulationRunner:
     """
-    Starts a SUMO simulation, injects agents, steps through
-    and collects raw per-agent data (journey + TLS metrics).
-    Uses TraCI's getAccumulatedWaitingTime to record total stopped time.
+    - starts SUMO simulation
+    - injects agents, 
+    - collects raw per-agent data
     """
     def __init__(self, sumo_binary: str, sumo_config: str,
                  max_steps: int = 3000, step_length: float = 1.0):
-        # configure SUMO to keep waiting‐time memory equal to the full run
         mem = max_steps * step_length
         self.cmd = [
             sumo_binary, "-c", sumo_config,
@@ -32,7 +30,7 @@ class SimulationRunner:
             dest = agent_manager.get_destination_edge()
             route_idx = agent_manager.get_route_label()
 
-            # initialize per-agent records
+            # init agent records
             for vid in ["safe_1", "risky_1"]:
                 data[vid] = {
                     'reached': False,
@@ -54,7 +52,6 @@ class SimulationRunner:
                     'prev_speed': None,
                     'prev_lane': None,
                     'collision_count': 0,
-                    # we will fill this via getAccumulatedWaitingTime()
                     'wait_time': 0.0,
                 }
 
@@ -76,7 +73,7 @@ class SimulationRunner:
                     rec['edges_visited'].add(traci.vehicle.getRoadID(vid))
                     rec['total_distance'] = traci.vehicle.getDistance(vid)
 
-                    # TLS proximity & run-through
+                    # TLS stuff
                     next_tls = traci.vehicle.getNextTLS(vid)
                     seen_ids = set()
                     for tls_id, state, dist_raw, *extra in next_tls:
@@ -98,13 +95,12 @@ class SimulationRunner:
                         if last == 'y':
                             rec['tls_stop_count'] += 1
 
-                    # speed, braking, lane changes
+                    # speed stuff
+                    # max speed
                     speed = traci.vehicle.getSpeed(vid)
-
-                    # track max speed
                     rec['max_speed'] = max(rec['max_speed'], speed)
 
-                    # braking metrics
+                    # braking 
                     if rec['prev_speed'] is not None:
                         decel = rec['prev_speed'] - speed
                         if decel > 0:
@@ -120,15 +116,13 @@ class SimulationRunner:
                         rec['lane_change_count'] += 1
                     rec['prev_lane'] = lane
 
-                    # reached destination?
+                    # reached destination y/n
                     if (not rec['reached']
                             and traci.vehicle.getRoadID(vid) == dest):
                         rec['reached'] = True
                         rec['end_step'] = step
 
-                # end of for step
-
-            # after stepping, grab the accumulated waiting time for each vehicle
+            # after stepping get acc waiting time for each vehicle
             for vid, rec in data.items():
                 try:
                     rec['wait_time'] = traci.vehicle.getAccumulatedWaitingTime(vid)
@@ -141,7 +135,7 @@ class SimulationRunner:
             except traci.TraCIException:
                 pass
 
-            # harvest TLS‐event recorder metrics from agents
+            # get tls metrics
             for agent in agent_manager.agents:
                 vid = getattr(agent, 'vehicle_id', None) or getattr(agent, 'vid', None)
                 rec = data[vid]

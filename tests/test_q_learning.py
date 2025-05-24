@@ -1,7 +1,6 @@
 import sys
 import pytest
 
-# ensure Python can import from src/
 sys.path.insert(0, "src")
 
 from agents.learning.rewards import QTable

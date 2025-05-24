@@ -1,64 +1,52 @@
-from collections import defaultdict
+# extra reward for accelerating in green, extra penalty for slowing/brking
+R_GREEN = 0.5  
+K_DECEL  = 0.1  
 
-def safe_reward(
-    prev_state: tuple[str, ...],
-    action: str,
-    new_state: tuple[str, ...],
-) -> float:
-    """Reward function for the SafeDriver agent.
-
-    Args:
-        prev_state: Encoded as (phase, ...).
-        action: One of 'STOP', 'SLOW', 'GO'.
-        new_state: New encoded state after action.
-
-    Returns:
-        A scalar reward encouraging safe TLS behavior.
+def safe_reward(prev_state, action, new_state, decel: float) -> float:
+    """
+    Reward for SafeDriver:
+        - stop on red
+        - cautious on amber (slows), shouldn't run
+        - go on green
     """
     phase = prev_state[0]
+    reward = 0.0
 
     if phase == 'RED' and action == 'GO':
         return -1.0
     if phase == 'GREEN' and action == 'GO':
-        return +1.0
+        reward += +1.0
     if phase == 'GREEN' and action == 'STOP':
-        return -0.5
+        reward -= 0.5
     if phase == 'AMBER' and action == 'SLOW':
-        return +0.5
+        reward += 0.5
     if phase == 'AMBER' and action == 'GO':
-        return -0.5
+        reward -= 0.5
 
-    return 0.0
+    # scaled brake penalty - prev had harsher breaking than risky (?)
+    if action in ('STOP', 'SLOW'):
+        reward -= K_DECEL * decel
 
+    return reward
 
-def risky_reward(
-    prev_state: tuple[str, ...],
-    action: str,
-    new_state: tuple[str, ...],
-) -> float:
-    """Reward function for the RiskyDriver agent.
-
-    Args:
-        prev_state: Encoded as (phase, ...).
-        action: One of 'STOP', 'SLOW', 'GO'.
-        new_state: New encoded state after action.
-
-    Returns:
-        A scalar reward that encourages speed but penalizes unsafe red-runs.
+def risky_reward(prev_state, action, new_state, dist_bin: int, max_dist_bin: int) -> float:
+    """
+    Reward for RiskyDriver:
+        - always gets small reward for going
+        - should run greens and ambers
+        - shouldnt always run red, but some is fine
     """
     phase = prev_state[0]
-    # base: small positive for GO, small negative otherwise
+    
     reward = +0.2 if action == 'GO' else -0.1
 
-    # bonus for running amber
+    if phase == 'GREEN' and action == 'GO':
+        reward += R_GREEN * (dist_bin / max_dist_bin)
     if phase == 'AMBER' and action == 'GO':
         reward += +0.3
-
-    # mild penalty for stopping on green (slows you down unnecessarily)
     if phase == 'GREEN' and action == 'STOP':
-        reward -= 0.2
-
-    # penalty for red-run
+        reward -= 1.0
+    # TODO: should this be this harsh?
     if phase == 'RED' and action == 'GO':
         reward -= 1.0
 

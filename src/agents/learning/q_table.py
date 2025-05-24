@@ -5,8 +5,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 class QTable:
-    """Tabular Q-learning core: maintains Q-values, chooses actions,
-    applies updates, and handles ε-decay."""
+    """Tabular Q-learning: maintains q-values, chooses actions,
+    applies updates, and handles epsilon-decay"""
 
     def __init__(
         self,
@@ -19,7 +19,7 @@ class QTable:
         self.alpha = alpha
         self.gamma = gamma
         self.epsilon = epsilon
-        # Q is a mapping: state → [Q-value for each action]
+        # q maps state -> q value for action
         self.Q: dict = defaultdict(lambda: [0.0 for _ in actions])
 
     def __repr__(self) -> str:
@@ -30,7 +30,7 @@ class QTable:
         )
 
     def choose_action(self, state):
-        """ε-greedy selection: random with prob ε or best-known action."""
+        """Epsilon-greedy selection: random with prob epsilon or best-known action"""
         if random.random() < self.epsilon or state not in self.Q:
             action = random.choice(self.actions)
             logger.debug("Exploring: chose %s in state %s", action, state)
@@ -46,7 +46,7 @@ class QTable:
         return action
 
     def update(self, state, action, reward, next_state):
-        """Perform the Q-learning update for a single transition."""
+        """Perform the Q-learning update for a single transition"""
         action_idx = self.actions.index(action)
         old_value = self.Q[state][action_idx]
         future_estimate = max(self.Q[next_state])
@@ -65,7 +65,7 @@ class QTable:
         )
 
     def decay_epsilon(self, decay_rate: float, min_epsilon: float = 0.01):
-        """Anneal ε after each episode or step-to-step decay."""
+        """Anneal epsilon after each episode/step-to-step decay"""
         old_eps = self.epsilon
         self.epsilon = max(min_epsilon, self.epsilon * decay_rate)
         logger.info("Epsilon decayed: %.4f → %.4f", old_eps, self.epsilon)

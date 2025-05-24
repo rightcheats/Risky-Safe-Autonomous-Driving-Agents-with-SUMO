@@ -1,7 +1,7 @@
 import pytest
-from src.simulation.simulation_runner import SimulationRunner  # uses rec['wait_time'] :contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}
+from src.simulation.simulation_runner import SimulationRunner
 
-# ── Dummy agents with TLS recorder stub ──
+# dummy agents, tls recorder stub
 class DummyAgent:
     def __init__(self, vid):
         self.vehicle_id = vid
@@ -9,6 +9,7 @@ class DummyAgent:
             amber_encounters = red_encounters = amber_runs = red_runs = 0
         self.recorder = R()
 
+# dummy agent manager
 class DummyManager:
     def __init__(self):
         self.agents = [DummyAgent("safe_1"), DummyAgent("risky_1")]
@@ -17,6 +18,7 @@ class DummyManager:
     def get_route_label(self):      return 0
     def update_agents(self, step):  pass
 
+# dummy traci
 class DummyTraci:
     def __init__(self):
         self.wait = 5.0
@@ -27,12 +29,15 @@ class DummyTraci:
 
 @pytest.fixture(autouse=True)
 def patch_traci(monkeypatch):
+
     import src.simulation.simulation_runner as sr
-    # stub SUMO start/close so no real connection
+
+    # stub sumo, no real connection
     monkeypatch.setattr(sr.traci, "start", lambda cmd: None)
     monkeypatch.setattr(sr.traci, "close", lambda: None)
+
     dummy = DummyTraci()
-    # stub both waiting-time calls
+
     monkeypatch.setattr(sr.traci.vehicle, "getWaitingTime",
                         dummy.vehicle_getWaitingTime)
     monkeypatch.setattr(sr.traci.vehicle, "getAccumulatedWaitingTime",
@@ -41,7 +46,7 @@ def patch_traci(monkeypatch):
 
 @pytest.fixture
 def runner(tmp_path):
-    # minimal SUMO config so constructor succeeds
+    # minimal SUMO config
     cfg = tmp_path / "dummy.sumocfg"
     cfg.write_text("""
     <configuration>
@@ -52,7 +57,8 @@ def runner(tmp_path):
       <time><end value="1"/></time>
     </configuration>
     """)
-    # zero steps → skip loop, but still run post-loop logic
+    # zero steps = skip loop
+    # but still run post-loop logic
     return SimulationRunner(sumo_binary="sumo",
                             sumo_config=str(cfg),
                             max_steps=0)
@@ -60,6 +66,5 @@ def runner(tmp_path):
 def test_waiting_time_is_captured(runner):
     mgr = DummyManager()
     data, _ = runner.run(mgr)
-    # production code uses rec['wait_time'] :contentReference[oaicite:2]{index=2}:contentReference[oaicite:3]{index=3}
     assert data["safe_1"]["wait_time"] == 5.0
     assert data["risky_1"]["wait_time"] == 5.0

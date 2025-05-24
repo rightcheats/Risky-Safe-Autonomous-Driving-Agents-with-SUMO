@@ -1,10 +1,13 @@
-# src/metrics/metrics_collector.py
-
 class MetricsCollector:
     """
-    Compute per-run summaries and aggregated averages
-    for journey metrics, TLS interactions, max-speed, sudden braking,
-    lane changes, collisions, and total wait time.
+    Compute per-run summaries and aggregated averages for: 
+        - journey metrics 
+        - TLS interactions 
+        - max-speed
+        - sudden braking
+        - lane changes
+        - collisions
+        - total wait time
     """
 
     def summarise_run(self, run_data: dict, route_index: int) -> list[list]:
@@ -33,7 +36,7 @@ class MetricsCollector:
                     round(avg_sp, 2),
                     round(rec['max_speed'], 2),
                     len(rec['edges_visited']),
-                    len(rec['tls_encountered']),  # TLS_enc
+                    len(rec['tls_encountered']),  
                     rec['amber_encountered'],
                     rec['red_encountered'],
                     rec['amber_run_count'],
@@ -43,7 +46,6 @@ class MetricsCollector:
                     round(avg_decel, 2),
                     rec['lane_change_count'],
                     rec.get('collision_count', 0),
-                    # total accumulated wait time (seconds)
                     round(rec.get('wait_time', 0.0), 2)
                 ])
             else:
@@ -53,29 +55,25 @@ class MetricsCollector:
 
     def compute_averages(self, all_runs: list[tuple[dict, int]]) -> list[list]:
         """
-        Aggregated averages row:
+        Averages row:
         [Agent, AvgTime, AvgDist, AvgSpeed, AvgMaxSpeed,
          AvgEdges, NumRuns, AvgTLS_enc, AvgAmber_enc, AvgRed_enc,
          AvgAmber_runs, AvgRed_runs, AvgSudden_brakes, AvgMaxDecel,
          AvgAvgDecel, AvgLane_changes, AvgCollisions, AvgWaitTime(s)]
         """
-        # initialize accumulators for each vehicle
+
+        # init accumulators for metrics
         agg = {
             vid: {
                 'sum_time': 0, 'sum_dist': 0.0, 'sum_sp': 0.0, 'sum_max_sp': 0.0,
-                'sum_edges': 0, 'sum_tls': 0,
-                'sum_amb_enc': 0, 'sum_red_enc': 0,
-                'sum_amb_runs': 0, 'sum_red_runs': 0,
-                'sum_sud_brakes': 0, 'sum_max_decel': 0.0, 'sum_avg_decel': 0.0,
-                'sum_lane_changes': 0, 'sum_collisions': 0,
-                # new accumulator for total wait time
-                'sum_wait_time': 0.0,
-                'count': 0
+                'sum_edges': 0, 'sum_tls': 0, 'sum_amb_enc': 0, 'sum_red_enc': 0,
+                'sum_amb_runs': 0, 'sum_red_runs': 0,'sum_sud_brakes': 0, 'sum_max_decel': 0.0, 
+                'sum_avg_decel': 0.0, 'sum_lane_changes': 0, 'sum_collisions': 0, 'sum_wait_time': 0.0, 'count': 0
             }
             for vid in ["safe_1", "risky_1"]
         }
 
-        # accumulate across all successful runs
+        # acc all successful runs
         for run_data, _ in all_runs:
             for vid, rec in run_data.items():
                 if rec.get('end_step') is None:
@@ -87,24 +85,23 @@ class MetricsCollector:
                     if rec['sudden_brake_count'] > 0 else 0.0
                 )
 
-                s['sum_time']         += t
-                s['sum_dist']         += rec['total_distance']
-                s['sum_sp']           += (rec['total_distance'] / t if t > 0 else 0.0)
-                s['sum_max_sp']       += rec.get('max_speed', 0.0)
-                s['sum_edges']        += len(rec['edges_visited'])
-                s['sum_tls']          += len(rec['tls_encountered'])
-                s['sum_amb_enc']      += rec['amber_encountered']
-                s['sum_red_enc']      += rec['red_encountered']
-                s['sum_amb_runs']     += rec['amber_run_count']
-                s['sum_red_runs']     += rec['red_run_count']
-                s['sum_sud_brakes']   += rec['sudden_brake_count']
-                s['sum_max_decel']    += rec['max_decel']
-                s['sum_avg_decel']    += avg_decel
+                s['sum_time'] += t
+                s['sum_dist'] += rec['total_distance']
+                s['sum_sp'] += (rec['total_distance'] / t if t > 0 else 0.0)
+                s['sum_max_sp'] += rec.get('max_speed', 0.0)
+                s['sum_edges'] += len(rec['edges_visited'])
+                s['sum_tls'] += len(rec['tls_encountered'])
+                s['sum_amb_enc'] += rec['amber_encountered']
+                s['sum_red_enc'] += rec['red_encountered']
+                s['sum_amb_runs'] += rec['amber_run_count']
+                s['sum_red_runs'] += rec['red_run_count']
+                s['sum_sud_brakes'] += rec['sudden_brake_count']
+                s['sum_max_decel'] += rec['max_decel']
+                s['sum_avg_decel'] += avg_decel
                 s['sum_lane_changes'] += rec['lane_change_count']
-                s['sum_collisions']   += rec.get('collision_count', 0)
-                # accumulate wait time
-                s['sum_wait_time']    += rec.get('wait_time', 0.0)
-                s['count']            += 1
+                s['sum_collisions'] += rec.get('collision_count', 0)
+                s['sum_wait_time'] += rec.get('wait_time', 0.0)
+                s['count'] += 1
 
         # compute averages
         rows = []
@@ -129,7 +126,6 @@ class MetricsCollector:
                     round(s['sum_avg_decel'] / c, 2),
                     round(s['sum_lane_changes'] / c, 2),
                     round(s['sum_collisions'] / c, 2),
-                    # average wait time (seconds)
                     round(s['sum_wait_time'] / c, 2)
                 ])
             else:
