@@ -80,10 +80,11 @@ class AgentManager:
             self.safe_driver = SafeDriver(safe_id, recorder)
             self.agents.append(self.safe_driver)
         else:
-            self.safe_driver.vehicle_id  = safe_id
-            self.safe_driver.prev_state  = None
+            self.safe_driver.vehicle_id = safe_id
+            self.safe_driver.prev_state = None
             self.safe_driver.last_action = None
-            self.safe_driver.recorder    = TLSEventRecorder()
+            self.safe_driver.recorder = TLSEventRecorder()
+            self.safe_driver.last_tls_phase = None
 
         # riskydriver instantiation / reuse
         if self.risky_driver is None:
@@ -91,10 +92,11 @@ class AgentManager:
             self.risky_driver = RiskyDriver(risky_id, self.route_id, recorder)
             self.agents.append(self.risky_driver)
         else:
-            self.risky_driver.vehicle_id  = risky_id
-            self.risky_driver.prev_state  = None
+            self.risky_driver.vehicle_id = risky_id
+            self.risky_driver.prev_state = None
             self.risky_driver.last_action = None
-            self.risky_driver.recorder    = TLSEventRecorder()
+            self.risky_driver.recorder = TLSEventRecorder()
+            self.risky_driver.last_tls_phase = None
 
     def update_agents(self, step: int) -> None:
         active = set(traci.vehicle.getIDList())

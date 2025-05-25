@@ -29,34 +29,52 @@ class SafeDriver(QLearningDriver):
         )
         self.state = 'approach'
 
+        self.last_tls_phase: str | None = None
+
     def encode_state(self) -> tuple[str,int,int,int]:
         """
         Returns (phase, dist_bin, speed_bin, ttl_bin)
         """
+
         next_tls = traci.vehicle.getNextTLS(self.vehicle_id)
+
         if not next_tls:
             # free road = treat like green/farthest tls
             speed = traci.vehicle.getSpeed(self.vehicle_id)
             return 'GREEN', 3, self._speed_bin(speed), N_TTL_BINS-1
 
         tls_id, _, dist, _ = next_tls[0]
-        raw = traci.trafficlight.getRedYellowGreenState(tls_id)
+
+        #NOTE: logic now done in simulation_runner.py isntead
+        # raw   = traci.trafficlight.getRedYellowGreenState(tls_id).lower()
+
+        # phase = 'GREEN' if 'g' in raw else ('AMBER' if 'y' in raw else 'RED')
+
+        # if self.last_tls_phase is None or phase != self.last_tls_phase:
+        #     if phase == 'AMBER':
+        #         self.recorder.saw_amber()
+        #     elif phase == 'RED':
+        #         self.recorder.saw_red()
+
+        raw   = traci.trafficlight.getRedYellowGreenState(tls_id).lower()
         phase = 'GREEN' if 'g' in raw else ('AMBER' if 'y' in raw else 'RED')
+        self.last_tls_phase = phase
 
         # distance bins
-        if   dist <= 10: dist_b = 0
+        if dist <= 10: dist_b = 0
         elif dist <= 20: dist_b = 1
         elif dist <= 40: dist_b = 2
-        else:            dist_b = 3
+        else: dist_b = 3
 
-        speed   = traci.vehicle.getSpeed(self.vehicle_id)
+        speed = traci.vehicle.getSpeed(self.vehicle_id)
         speed_b = self._speed_bin(speed)
-        ttl_b   = self._time_to_red_bin(tls_id)
+        ttl_b = self._time_to_red_bin(tls_id)
 
         return phase, dist_b, speed_b, ttl_b
 
     def _speed_bin(self, speed: float) -> int:
-        if speed == 0:     return 0
+        if speed == 0: 
+            return 0
         return 1 if speed <= 5 else 2
 
     def _time_to_red_bin(self, tls_id: str) -> int:
@@ -65,9 +83,9 @@ class SafeDriver(QLearningDriver):
         """
         # TODO: check tuple size unpack
         switch_time = traci.trafficlight.getNextSwitch(tls_id)
-        now         = traci.simulation.getTime()
-        total_dur   = traci.trafficlight.getPhaseDuration(tls_id)
-        ttl_frac    = max(0.0, (switch_time - now) / total_dur)
+        now = traci.simulation.getTime()
+        total_dur = traci.trafficlight.getPhaseDuration(tls_id)
+        ttl_frac = max(0.0, (switch_time - now) / total_dur)
         return min(N_TTL_BINS-1, int(ttl_frac * N_TTL_BINS))
 
     def compute_reward(

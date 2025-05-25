@@ -27,8 +27,9 @@ class RiskyDriver(QLearningDriver):
             gamma=0.9,
             epsilon=1.0,
         )
+
         self.route = route
-        self.last_tls_state = None  # event recording
+        self.last_tls_phase: str | None = None
 
         # tuneable motion parameters
         self.a_c = 4.5
@@ -46,25 +47,31 @@ class RiskyDriver(QLearningDriver):
             return 'GREEN', 3, self._speed_bin(speed), N_TTL_BINS-1
 
         tls_id, _, dist, _ = next_tls[0]
-        raw = traci.trafficlight.getRedYellowGreenState(tls_id).lower()
 
-        # record amber/red events once
-        if self.last_tls_state is None or raw != self.last_tls_state:
-            if 'y' in raw:
-                self.recorder.saw_amber()
-            if 'r' in raw:
-                self.recorder.saw_red()
-        self.last_tls_state = raw
+        #NOTE: should now work in simulation_runner.py instead
+        # # collapse into phase
+        # raw   = traci.trafficlight.getRedYellowGreenState(tls_id).lower()
+        # phase = 'GREEN' if 'g' in raw else ('AMBER' if 'y' in raw else 'RED')
 
+        # # record exactly one encounter when phase first changes
+        # if self.last_tls_phase is None or phase != self.last_tls_phase:
+        #     if phase == 'AMBER':
+        #         self.recorder.saw_amber()
+        #     elif phase == 'RED':
+        #         self.recorder.saw_red()
+        # self.last_tls_phase = phase
+
+        raw   = traci.trafficlight.getRedYellowGreenState(tls_id).lower()
         phase = 'GREEN' if 'g' in raw else ('AMBER' if 'y' in raw else 'RED')
+        self.last_tls_phase = phase
 
         # distance bins
-        if   dist <= 10: dist_b = 0
+        if dist <= 10: dist_b = 0
         elif dist <= 20: dist_b = 1
         elif dist <= 40: dist_b = 2
-        else:            dist_b = 3
+        else: dist_b = 3
 
-        speed   = traci.vehicle.getSpeed(self.vehicle_id)
+        speed = traci.vehicle.getSpeed(self.vehicle_id)
         speed_b = self._speed_bin(speed)
         ttl_b   = self._time_to_red_bin(tls_id)
 

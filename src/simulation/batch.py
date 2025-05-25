@@ -91,14 +91,14 @@ def main(num_runs: int = 100):
         return df
 
 
-    qt_safe    = mgr.safe_driver.qtable
-    df_q_safe  = build_q_df(qt_safe)
+    qt_safe = mgr.safe_driver.qtable
+    df_q_safe = build_q_df(qt_safe)
 
-    qt_risky   = mgr.risky_driver.qtable
+    qt_risky = mgr.risky_driver.qtable
     df_q_risky = build_q_df(qt_risky)
 
-    phases      = ["GREEN", "AMBER", "RED"]
-    speed_bins  = [0, 1, 2]
+    phases = ["GREEN", "AMBER", "RED"]
+    speed_bins = [0, 1, 2]
     dist_labels = ["0-10", "10-20", "20-40", ">40"]
     speed_labels = {
         0: "Stopped (0 m/s)",
