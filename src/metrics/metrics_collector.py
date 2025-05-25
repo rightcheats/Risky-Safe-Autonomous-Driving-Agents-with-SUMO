@@ -136,7 +136,8 @@ class MetricsCollector:
                     round(s['sum_wait_time'] / c, 2),
                     s['sum_tls'],
                     s['sum_amb_enc'],
-                    s['sum_red_enc']
+                    s['sum_red_enc'],
+                    s['sum_green_enc']
                 ])
             else:
                 rows.append([vid] + ["N/A"] * 21)
