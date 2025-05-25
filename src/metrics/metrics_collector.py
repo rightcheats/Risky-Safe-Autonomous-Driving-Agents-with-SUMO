@@ -39,8 +39,10 @@ class MetricsCollector:
                     len(rec['tls_encountered']),  
                     rec['amber_encountered'],
                     rec['red_encountered'],
+                    rec['green_encountered'],
                     rec['amber_run_count'],
                     rec['red_run_count'],
+                    rec['green_run_count'],
                     rec['sudden_brake_count'],
                     round(rec['max_decel'], 2),
                     round(avg_decel, 2),
@@ -67,8 +69,8 @@ class MetricsCollector:
         agg = {
             vid: {
                 'sum_time': 0, 'sum_dist': 0.0, 'sum_sp': 0.0, 'sum_max_sp': 0.0,
-                'sum_edges': 0, 'sum_tls': 0, 'sum_amb_enc': 0, 'sum_red_enc': 0,
-                'sum_amb_runs': 0, 'sum_red_runs': 0,'sum_sud_brakes': 0, 'sum_max_decel': 0.0, 
+                'sum_edges': 0, 'sum_tls': 0, 'sum_amb_enc': 0, 'sum_red_enc': 0, 'sum_green_enc': 0,
+                'sum_amb_runs': 0, 'sum_red_runs': 0, 'sum_green_runs':0, 'sum_sud_brakes': 0, 'sum_max_decel': 0.0, 
                 'sum_avg_decel': 0.0, 'sum_lane_changes': 0, 'sum_collisions': 0, 'sum_wait_time': 0.0, 'count': 0
             }
             for vid in ["safe_1", "risky_1"]
@@ -94,8 +96,10 @@ class MetricsCollector:
                 s['sum_tls'] += len(rec['tls_encountered'])
                 s['sum_amb_enc'] += rec['amber_encountered']
                 s['sum_red_enc'] += rec['red_encountered']
+                s['sum_green_enc'] += rec['green_encountered']
                 s['sum_amb_runs'] += rec['amber_run_count']
                 s['sum_red_runs'] += rec['red_run_count']
+                s['sum_green_runs'] += rec['green_run_count']
                 s['sum_sud_brakes'] += rec['sudden_brake_count']
                 s['sum_max_decel'] += rec['max_decel']
                 s['sum_avg_decel'] += avg_decel
@@ -120,8 +124,10 @@ class MetricsCollector:
                     round(s['sum_tls'] / c, 2),
                     round(s['sum_amb_enc'] / c, 2),
                     round(s['sum_red_enc'] / c, 2),
+                    round(s['sum_green_enc'] /c, 2),
                     round(s['sum_amb_runs'] / c, 2),
                     round(s['sum_red_runs'] / c, 2),
+                    round(s['sum_green_runs'] / c, 2),
                     round(s['sum_sud_brakes'] / c, 2),
                     round(s['sum_max_decel'] / c, 2),
                     round(s['sum_avg_decel'] / c, 2),

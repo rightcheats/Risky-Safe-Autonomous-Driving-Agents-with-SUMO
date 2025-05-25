@@ -179,8 +179,8 @@ def main(num_runs: int = 100):
         os.path.join(CSV_DIR, "simulation_per_run.csv"),
         headers=[
             "Agent", "Route", "Time(steps)", "Distance(m)", "Speed(m/s)",
-            "MaxSpeed(m/s)", "Edges", "TLS_enc", "Amber_enc", "Red_enc",
-            "Amber_runs", "Red_runs", "Sudden_brakes", "MaxDecel(m/s^2)",
+            "MaxSpeed(m/s)", "Edges", "TLS_enc", "Amber_enc", "Red_enc", "Green_enc",
+            "Amber_runs", "Red_runs", "Green_runs", "Sudden_brakes", "MaxDecel(m/s^2)",
             "AvgDecel(m/s^2)", "Lane_changes", "Collisions", "WaitTime(s)"
         ],
         rows=per_rows
@@ -191,13 +191,13 @@ def main(num_runs: int = 100):
         headers=[
             "Agent", "AvgTime(steps)", "AvgDistance(m)", "AvgSpeed(m/s)",
             "AvgMaxSpeed(m/s)", "AvgEdges", "NumRuns", "AvgTLS_enc",
-            "AvgAmber_enc", "AvgRed_enc", "AvgAmber_runs", "AvgRed_runs",
-            "AvgSudden_brakes", "AvgMaxDecel(m/s^2)", "AvgAvgDecel(m/s^2)",
+            "AvgAmber_enc", "AvgRed_enc", "AvgGreen_enc", "AvgAmber_runs", "AvgRed_runs",
+            "AvgGreen_runs", "AvgSudden_brakes", "AvgMaxDecel(m/s^2)", "AvgAvgDecel(m/s^2)",
             "AvgLane_changes", "AvgCollisions", "AvgWaitTime(s)",
-            "TotalTLS_enc", "TotalAmber_enc", "TotalRed_enc"
+            "TotalTLS_enc", "TotalAmber_enc", "TotalRed_enc", "TotalGreen_enc"
         ],
         rows=avg_rows
     )
 
 if __name__ == "__main__":
-    main(3)
+    main(5)

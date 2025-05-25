@@ -104,6 +104,8 @@ class SafeDriver(QLearningDriver):
             self.recorder.ran_amber()
         if phase == "RED" and action == "GO":
             self.recorder.ran_red()
+        if phase == "GREEN" and action == "GO":
+            self.recorder.ran_green()
 
         logger.debug(
             "SafeDriver %s: %s --%s--> %s | decel=%.2f = %.3f",

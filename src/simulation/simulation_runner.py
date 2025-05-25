@@ -41,8 +41,10 @@ class SimulationRunner:
                     'tls_stop_count': 0,
                     'amber_encountered': 0,
                     'red_encountered': 0,
+                    'green_encountered': 0,
                     'amber_run_count': 0,
                     'red_run_count': 0,
+                    'green_run_count': 0,
                     'tls_last_state': {},
                     'max_speed': 0.0,
                     'sudden_brake_count': 0,
@@ -91,12 +93,19 @@ class SimulationRunner:
                                 rec['amber_encountered'] += 1
                             elif 'r' in raw_state:
                                 rec['red_encountered'] += 1
+                            elif 'g' in raw_state:
+                                rec['green_encountered'] += 1
 
                     passed = set(rec['tls_last_state']) - seen_ids
                     for tls_id in passed:
                         last = rec['tls_last_state'].pop(tls_id)
-                        if last == 'y':
-                            rec['tls_stop_count'] += 1
+                        # count one run per TLS passed, based on last observed color
+                        if 'y' in last:
+                            rec['amber_run_count'] += 1
+                        elif 'r' in last:
+                            rec['red_run_count'] += 1
+                        elif 'g' in last:
+                            rec['green_run_count'] += 1
 
                     # speed stuff
                     # max speed
@@ -138,20 +147,11 @@ class SimulationRunner:
             except traci.TraCIException:
                 pass
 
-            #FIXME: overwrites amber/red encs
-            # # get tls metrics
             # for agent in agent_manager.agents:
-            #     vid = getattr(agent, 'vehicle_id', None) or getattr(agent, 'vid', None)
+            #     vid = agent.vehicle_id
             #     rec = data[vid]
-            #     rec['amber_encountered'] = agent.recorder.amber_encounters
-            #     rec['red_encountered']   = agent.recorder.red_encounters
-            #     rec['amber_run_count']   = agent.recorder.amber_runs
-            #     rec['red_run_count']     = agent.recorder.red_runs
-
-            for agent in agent_manager.agents:
-                vid = agent.vehicle_id
-                rec = data[vid]
-                rec['amber_run_count'] = agent.recorder.amber_runs
-                rec['red_run_count']   = agent.recorder.red_runs
+            #     rec['amber_run_count'] = agent.recorder.amber_runs
+            #     rec['red_run_count'] = agent.recorder.red_runs
+            #     rec['green_run_count'] = agent.recorder.green_runs
 
         return data, route_idx

@@ -108,6 +108,8 @@ class RiskyDriver(QLearningDriver):
             self.recorder.ran_amber()
         if phase == "RED" and action == "GO":
             self.recorder.ran_red()
+        if phase == "GREEN" and action == "GO":
+            self.recorder.ran_green()
 
         logger.debug(
             "RiskyDriver %s: %s --%s--> %s = %.3f",
@@ -117,7 +119,6 @@ class RiskyDriver(QLearningDriver):
         return r
 
     def apply_action(self, action: str) -> None:
-        # identical to before: STOP / SLOW / GO map to TraCI calls
         if action == 'STOP':
             traci.vehicle.setSpeed(self.vehicle_id, 0.0)
         elif action == 'SLOW':
