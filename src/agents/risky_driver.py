@@ -89,14 +89,24 @@ class RiskyDriver(QLearningDriver):
         new_state: tuple[str,int,int,int],
         decel: float
     ) -> float:
+        
         # extract dist_bin from previous state
-        dist_bin     = prev_state[1]
+        dist_bin = prev_state[1]
         max_dist_bin = 3
         r = risky_reward(prev_state, action, new_state, dist_bin, max_dist_bin)
+
+        #NOTE: check this works
+        phase = prev_state[0]
+        if phase == "AMBER" and action == "GO":
+            self.recorder.ran_amber()
+        if phase == "RED" and action == "GO":
+            self.recorder.ran_red()
+
         logger.debug(
             "RiskyDriver %s: %s --%s--> %s = %.3f",
             self.vehicle_id, prev_state, action, new_state, r
         )
+
         return r
 
     def apply_action(self, action: str) -> None:

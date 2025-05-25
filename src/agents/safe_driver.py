@@ -77,11 +77,21 @@ class SafeDriver(QLearningDriver):
         new_state: tuple[str,int,int,int],
         decel: float
     ) -> float:
+        
         r = safe_reward(prev_state, action, new_state, decel)
+
+        #NOTE: check this works
+        phase = prev_state[0]
+        if phase == "AMBER" and action == "GO":
+            self.recorder.ran_amber()
+        if phase == "RED" and action == "GO":
+            self.recorder.ran_red()
+
         logger.debug(
             "SafeDriver %s: %s --%s--> %s | decel=%.2f = %.3f",
             self.vehicle_id, prev_state, action, new_state, decel, r
         )
+
         return r
 
     def apply_action(self, action: str) -> None:
