@@ -193,7 +193,8 @@ def main(num_runs: int = 100):
             "AvgMaxSpeed(m/s)", "AvgEdges", "NumRuns", "AvgTLS_enc",
             "AvgAmber_enc", "AvgRed_enc", "AvgAmber_runs", "AvgRed_runs",
             "AvgSudden_brakes", "AvgMaxDecel(m/s^2)", "AvgAvgDecel(m/s^2)",
-            "AvgLane_changes", "AvgCollisions", "AvgWaitTime(s)"
+            "AvgLane_changes", "AvgCollisions", "AvgWaitTime(s)",
+            "TotalTLS_enc", "TotalAmber_enc", "TotalRed_enc"
         ],
         rows=avg_rows
     )

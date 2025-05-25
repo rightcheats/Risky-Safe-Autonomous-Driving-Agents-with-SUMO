@@ -57,9 +57,10 @@ class MetricsCollector:
         """
         Averages row:
         [Agent, AvgTime, AvgDist, AvgSpeed, AvgMaxSpeed,
-         AvgEdges, NumRuns, AvgTLS_enc, AvgAmber_enc, AvgRed_enc,
-         AvgAmber_runs, AvgRed_runs, AvgSudden_brakes, AvgMaxDecel,
-         AvgAvgDecel, AvgLane_changes, AvgCollisions, AvgWaitTime(s)]
+        AvgEdges, NumRuns, AvgTLS_enc, AvgAmber_enc, AvgRed_enc,
+        AvgAmber_runs, AvgRed_runs, AvgSudden_brakes, AvgMaxDecel,
+        AvgAvgDecel, AvgLane_changes, AvgCollisions, AvgWaitTime(s),
+        TotalTLS_enc, TotalAmber_enc, TotalRed_enc]
         """
 
         # init accumulators for metrics
@@ -126,8 +127,11 @@ class MetricsCollector:
                     round(s['sum_avg_decel'] / c, 2),
                     round(s['sum_lane_changes'] / c, 2),
                     round(s['sum_collisions'] / c, 2),
-                    round(s['sum_wait_time'] / c, 2)
+                    round(s['sum_wait_time'] / c, 2),
+                    s['sum_tls'],
+                    s['sum_amb_enc'],
+                    s['sum_red_enc']
                 ])
             else:
-                rows.append([vid] + ["N/A"] * 18)
+                rows.append([vid] + ["N/A"] * 21)
         return rows

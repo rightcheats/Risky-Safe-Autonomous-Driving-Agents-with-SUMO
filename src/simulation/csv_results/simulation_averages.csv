@@ -1,3 +1,3 @@
-Agent,AvgTime(steps),AvgDistance(m),AvgSpeed(m/s),AvgMaxSpeed(m/s),AvgEdges,NumRuns,AvgTLS_enc,AvgAmber_enc,AvgRed_enc,AvgAmber_runs,AvgRed_runs,AvgSudden_brakes,AvgMaxDecel(m/s^2),AvgAvgDecel(m/s^2),AvgLane_changes,AvgCollisions,AvgWaitTime(s)
-safe_1,587.33,1608.31,2.89,9.48,54.67,3,5.67,1.33,3.67,20.67,10.33,66.0,4.5,7.86,54.67,0.0,0.0
-risky_1,1251.67,1609.35,1.31,8.39,55.33,3,5.67,1.33,3.67,64.33,17.67,55.67,4.5,10.28,55.33,0.0,0.0
+Agent,AvgTime(steps),AvgDistance(m),AvgSpeed(m/s),AvgMaxSpeed(m/s),AvgEdges,NumRuns,AvgTLS_enc,AvgAmber_enc,AvgRed_enc,AvgAmber_runs,AvgRed_runs,AvgSudden_brakes,AvgMaxDecel(m/s^2),AvgAvgDecel(m/s^2),AvgLane_changes,AvgCollisions,AvgWaitTime(s),TotalTLS_enc,TotalAmber_enc,TotalRed_enc
+safe_1,747.0,1563.62,1.63,9.3,51.67,3,4.0,2.0,1.33,38.33,17.67,65.0,3.0,5.88,53.0,0.0,0.0,12,6,4
+risky_1,1463.67,1565.24,0.83,8.57,55.33,3,4.0,1.33,2.0,91.67,39.0,56.0,3.0,7.25,55.67,0.0,0.0,12,4,6
