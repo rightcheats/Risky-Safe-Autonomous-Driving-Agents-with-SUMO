@@ -1,8 +1,19 @@
 import logging
 import traci
+
 from src.simulation.tls_recorder import TLSEventRecorder
 from .learning.q_learning_driver import QLearningDriver
 from .learning.rewards import safe_reward
+
+# debug config
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
+# ignore noisy libs
+logging.getLogger("PIL").setLevel(logging.WARNING)
+logging.getLogger("matplotlib").setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +28,7 @@ class SafeDriver(QLearningDriver):
     DECEL_AMBER = 2.6  
     DECEL_RED   = 4.5  
     STOP_MARGIN = 0.5  
+    SPEED_PENALTY = 1.0
 
     def __init__(self, vehicle_id: str, recorder: TLSEventRecorder):
         super().__init__(
@@ -72,10 +84,18 @@ class SafeDriver(QLearningDriver):
 
         return phase, dist_b, speed_b, ttl_b
 
+    #NOTE: new = add q learning for speed
     def _speed_bin(self, speed: float) -> int:
-        if speed == 0: 
+        if speed == 0:
             return 0
-        return 1 if speed <= 5 else 2
+        # compare against lane's allowed speed
+        allowed = traci.vehicle.getAllowedSpeed(self.vehicle_id)
+        speed_b = 1 if speed <= allowed else 2
+        logger.debug(
+            "SafeDriver %s: speed=%.2f, allowed=%.2f → speed_bin=%d",
+            self.vehicle_id, speed, allowed, speed_b
+        )
+        return speed_b
 
     def _time_to_red_bin(self, tls_id: str) -> int:
         """
@@ -98,6 +118,15 @@ class SafeDriver(QLearningDriver):
         
         r = safe_reward(prev_state, action, new_state, decel)
 
+        # penalty for > speed limit
+        _, _, speed_b, _ = new_state
+        if speed_b == 2:
+            r -= SafeDriver.SPEED_PENALTY
+            logger.debug(
+                "SafeDriver %s: overspeed detected (bin=2), applying penalty=%.2f",
+                self.vehicle_id, SafeDriver.SPEED_PENALTY
+            )
+
         #NOTE: check this works
         phase = prev_state[0]
         if phase == "AMBER" and action == "GO":
@@ -107,10 +136,10 @@ class SafeDriver(QLearningDriver):
         if phase == "GREEN" and action == "GO":
             self.recorder.ran_green()
 
-        logger.debug(
-            "SafeDriver %s: %s --%s--> %s | decel=%.2f = %.3f",
-            self.vehicle_id, prev_state, action, new_state, decel, r
-        )
+        # logger.debug(
+        #     "SafeDriver %s: %s --%s--> %s | decel=%.2f = %.3f",
+        #     self.vehicle_id, prev_state, action, new_state, decel, r
+        # )
 
         return r
 
@@ -121,7 +150,10 @@ class SafeDriver(QLearningDriver):
             traci.vehicle.slowDown(
                 self.vehicle_id, 0.0, SafeDriver.DECEL_AMBER
             )
-        else:  # GO action
-            traci.vehicle.setSpeed(
-                self.vehicle_id, traci.vehicle.getMaxSpeed(self.vehicle_id)
+        else:  # GO action = comply with current speed limit
+            allowed = traci.vehicle.getAllowedSpeed(self.vehicle_id)
+            traci.vehicle.setSpeed(self.vehicle_id, allowed)
+            logger.debug(
+                "SafeDriver %s applied GO → setSpeed=%.2f (allowed)",
+                self.vehicle_id, allowed
             )

@@ -111,10 +111,10 @@ class RiskyDriver(QLearningDriver):
         if phase == "GREEN" and action == "GO":
             self.recorder.ran_green()
 
-        logger.debug(
-            "RiskyDriver %s: %s --%s--> %s = %.3f",
-            self.vehicle_id, prev_state, action, new_state, r
-        )
+        # logger.debug(
+        #     "RiskyDriver %s: %s --%s--> %s = %.3f",
+        #     self.vehicle_id, prev_state, action, new_state, r
+        # )
 
         return r
 

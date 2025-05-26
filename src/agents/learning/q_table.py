@@ -33,7 +33,7 @@ class QTable:
         """Epsilon-greedy selection: random with prob epsilon or best-known action"""
         if random.random() < self.epsilon or state not in self.Q:
             action = random.choice(self.actions)
-            logger.debug("Exploring: chose %s in state %s", action, state)
+            #logger.debug("Exploring: chose %s in state %s", action, state)
             return action
 
         q_vals = self.Q[state]
@@ -54,15 +54,14 @@ class QTable:
         td_error = td_target - old_value
         self.Q[state][action_idx] += self.alpha * td_error
 
-        logger.debug(
-            "Q[%s][%s] updated: old=%.3f, reward=%.3f, "
-            "future=%.3f → new=%.3f",
-            state,
-            action,
-            old_value,
-            reward + self.gamma * future_estimate,
-            self.Q[state][action_idx],
-        )
+        # logger.debug(
+        #     "Q[%s][%s] updated: old=%.3f → new=%.3f",
+        #     state,
+        #     action,
+        #     old_value,
+        #     self.Q[state][action_idx],
+        # )
+
 
     def decay_epsilon(self, decay_rate: float, min_epsilon: float = 0.01):
         """Anneal epsilon after each episode/step-to-step decay"""

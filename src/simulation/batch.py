@@ -200,4 +200,4 @@ def main(num_runs: int = 100):
     )
 
 if __name__ == "__main__":
-    main(5)
+    main(20)
