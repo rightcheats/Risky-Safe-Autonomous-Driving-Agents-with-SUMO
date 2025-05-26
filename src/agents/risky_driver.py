@@ -35,6 +35,8 @@ class RiskyDriver(QLearningDriver):
         self.a_c = 4.5
         self.a_max = 2.6
         self.accel_duration = 1.0 
+        self.max_speed_excess = 1.2 # allowed to go 20% over the speed limit
+        self.small_excess_ratio = 1.1 # small vs large speed overshoot thresh
 
     def encode_state(self) -> tuple[str,int,int,int]:
         """
@@ -78,8 +80,21 @@ class RiskyDriver(QLearningDriver):
         return phase, dist_b, speed_b, ttl_b
 
     def _speed_bin(self, v: float) -> int:
-        if v == 0:     return 0
-        return 1 if v <= 5 else 2
+        """
+        0: stopped
+        1: at or below limit
+        2: small overshoot (<= small_excess_ratio * limit)
+        3: large overshoot (> small_excess_ratio up to max)
+        """
+        if v == 0:
+            return 0
+        allowed = traci.vehicle.getAllowedSpeed(self.vehicle_id)  # ← new
+        if v <= allowed:
+            return 1
+        elif v <= allowed * self.small_excess_ratio:
+            return 2
+        else:
+            return 3
 
     def _time_to_red_bin(self, tls_id: str) -> int:
 
@@ -111,6 +126,13 @@ class RiskyDriver(QLearningDriver):
         if phase == "GREEN" and action == "GO":
             self.recorder.ran_green()
 
+        # reward/penalise based on overshoot for speed
+        _, _, speed_b, _ = new_state
+        if speed_b == 2:
+            r += 0.2     # small bonus for slight speeding
+        elif speed_b == 3:
+            r -= 0.5     # penalty for too-much speeding
+
         # logger.debug(
         #     "RiskyDriver %s: %s --%s--> %s = %.3f",
         #     self.vehicle_id, prev_state, action, new_state, r
@@ -125,7 +147,11 @@ class RiskyDriver(QLearningDriver):
             traci.vehicle.slowDown(
                 self.vehicle_id, 0.0, self.a_c  # comfortable decel
             )
-        else:  # GO
-            traci.vehicle.setAcceleration(
-                self.vehicle_id, self.a_max, self.accel_duration
+        else:  # GO: set speed above the limit
+            allowed = traci.vehicle.getAllowedSpeed(self.vehicle_id)   
+            target = allowed * self.max_speed_excess                  
+            traci.vehicle.setSpeed(self.vehicle_id, target)           
+            logger.debug(
+                "RiskyDriver %s GO → setSpeed=%.2f (%.0f%% of limit)",
+                self.vehicle_id, target, 100 * self.max_speed_excess
             )
