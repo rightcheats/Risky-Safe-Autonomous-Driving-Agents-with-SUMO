@@ -55,6 +55,7 @@ class SimulationRunner:
                     'prev_lane': None,
                     'collision_count': 0,
                     'wait_time': 0.0,
+                    'speed_bin_counts': {0: 0, 1: 0, 2: 0, 3: 0}, # for stacked plot
                 }
 
             # simulation loop
@@ -66,6 +67,16 @@ class SimulationRunner:
                 for vid, rec in data.items():
                     if vid not in traci.vehicle.getIDList():
                         continue
+
+
+                    # --- NEW: tally the current speed bin ---
+                    speed = traci.vehicle.getSpeed(vid)
+                    # pick driver by vehicle_id to get its bin logic
+                    driver = (agent_manager.safe_driver
+                              if vid == agent_manager.safe_driver.vehicle_id
+                              else agent_manager.risky_driver)
+                    b = driver._speed_bin(speed)
+                    rec['speed_bin_counts'][b] += 1 
 
                     # collisions
                     if vid in colliding:

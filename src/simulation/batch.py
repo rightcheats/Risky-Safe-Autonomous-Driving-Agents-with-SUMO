@@ -207,5 +207,70 @@ def main(num_runs: int = 100):
         rows=avg_rows
     )
 
+    # --- Compare average distribution over first vs last 10 runs per agent ---
+    # determine group size (use 10 or half of runs if fewer)
+    group_size = min(10, successful // 2 or 1)
+    first_group = all_runs[:group_size]
+    last_group  = all_runs[-group_size:]
+
+    agents = [
+        mgr.safe_driver.vehicle_id,
+        mgr.risky_driver.vehicle_id
+    ]
+    bin_labels = {
+        0: "Stopped",
+        1: "Compliant",
+        2: "Small overshoot",
+        3: "Large overshoot"
+    }
+
+    for agent_id in agents:
+        # aggregate counts over first and last groups
+        agg_first = {
+            b: sum(run_data[agent_id]['speed_bin_counts'][b] for run_data, _ in first_group)
+            for b in bin_labels
+        }
+        agg_last = {
+            b: sum(run_data[agent_id]['speed_bin_counts'][b] for run_data, _ in last_group)
+            for b in bin_labels
+        }
+        tot_first = sum(agg_first.values()) or 1
+        tot_last  = sum(agg_last.values())  or 1
+
+        # build DataFrame of fractions
+        df_cmp = pd.DataFrame({
+            "group": [f"First {group_size}", f"Last {group_size}"],
+            **{
+                bin_labels[b]: [
+                    agg_first[b] / tot_first,
+                    agg_last[b]  / tot_last
+                ] for b in sorted(bin_labels)
+            }
+        }).set_index("group")
+
+        # plot stacked-bar comparison
+        fig, ax = plt.subplots(figsize=(8, 4))
+        df_cmp.plot(
+            kind="bar",
+            stacked=True,
+            ax=ax,
+            legend=True
+        )
+        fig.suptitle(
+            f"{agent_id}: Avg speed-bin distribution\n"
+            f"First {group_size} vs Last {group_size} runs",
+            y=0.95
+        )
+        ax.set_ylabel("Fraction of timesteps")
+        ax.set_ylim(0, 1)
+        plt.xticks(rotation=0)
+        plt.tight_layout()
+        fig.subplots_adjust(top=0.88)
+
+        out_fname = f"speed_bins_compare_{agent_id}.png"
+        out_path  = os.path.join(CSV_DIR, out_fname)
+        plt.savefig(out_path)
+        print(f"[Plot] avg speed-bin comparison ({group_size}) for {agent_id} saved to {out_path}")
+
 if __name__ == "__main__":
-    main(1)
+    main(100)
