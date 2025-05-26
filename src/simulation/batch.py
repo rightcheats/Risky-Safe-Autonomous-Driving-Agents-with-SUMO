@@ -97,6 +97,14 @@ def main(num_runs: int = 100):
     qt_risky = mgr.risky_driver.qtable
     df_q_risky = build_q_df(qt_risky)
 
+    # → persist learned Q-values
+    model_dir = r"C:\Users\lolam\Documents\comp sci\y3\y3-spr\IntelAgents\Coursework\project\src\agents\learning\models"
+    safe_path  = os.path.join(model_dir, "safe_driver_qtable.pkl")
+    risky_path = os.path.join(model_dir, "risky_driver_qtable.pkl")
+    mgr.safe_driver.qtable.save(safe_path)
+    mgr.risky_driver.qtable.save(risky_path)
+    print(f"[Save] Q-tables saved to {model_dir}")
+
     phases = ["GREEN", "AMBER", "RED"]
     speed_bins = [0, 1, 2]
     dist_labels = ["0-10", "10-20", "20-40", ">40"]
@@ -200,4 +208,4 @@ def main(num_runs: int = 100):
     )
 
 if __name__ == "__main__":
-    main(20)
+    main(1)

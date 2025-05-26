@@ -67,7 +67,6 @@ class AgentManager:
             )
             traci.vehicle.setColor(vid, color)
 
-        #TODO: sort logging out
         logger.info(
             "Injected agents on %s (route #%d)",
             self.route_id,
@@ -86,6 +85,10 @@ class AgentManager:
             self.safe_driver.recorder = TLSEventRecorder()
             self.safe_driver.last_tls_phase = None
 
+        # → load persisted Q-values (if any)
+        qpath_safe = r"C:\Users\lolam\Documents\comp sci\y3\y3-spr\IntelAgents\Coursework\project\src\agents\learning\models\safe_driver_qtable.pkl"
+        self.safe_driver.qtable.load(qpath_safe)
+
         # riskydriver instantiation / reuse
         if self.risky_driver is None:
             recorder = TLSEventRecorder()
@@ -97,6 +100,10 @@ class AgentManager:
             self.risky_driver.last_action = None
             self.risky_driver.recorder = TLSEventRecorder()
             self.risky_driver.last_tls_phase = None
+
+        # → load persisted Q-values for risky driver
+        qpath_risky = r"C:\Users\lolam\Documents\comp sci\y3\y3-spr\IntelAgents\Coursework\project\src\agents\learning\models\risky_driver_qtable.pkl"
+        self.risky_driver.qtable.load(qpath_risky)
 
     def update_agents(self, step: int) -> None:
         active = set(traci.vehicle.getIDList())

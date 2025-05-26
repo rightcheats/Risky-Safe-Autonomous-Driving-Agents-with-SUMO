@@ -1,6 +1,8 @@
 from collections import defaultdict
 import random
 import logging
+import os
+import pickle
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +64,27 @@ class QTable:
         #     self.Q[state][action_idx],
         # )
 
-
     def decay_epsilon(self, decay_rate: float, min_epsilon: float = 0.01):
         """Anneal epsilon after each episode/step-to-step decay"""
         old_eps = self.epsilon
         self.epsilon = max(min_epsilon, self.epsilon * decay_rate)
         logger.info("Epsilon decayed: %.4f → %.4f", old_eps, self.epsilon)
+
+    def save(self, filepath: str) -> None:
+        """Persist Q-table to disk."""
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, "wb") as f:
+            pickle.dump({
+                "Q": dict(self.Q),
+                "epsilon": self.epsilon
+            }, f)
+
+    def load(self, filepath: str) -> None:
+        """Load Q-table from disk if present."""
+        if os.path.exists(filepath):
+            with open(filepath, "rb") as f:
+                data = pickle.load(f)
+            # rewrap into defaultdict so unseen states → [0,…]
+            self.Q = defaultdict(lambda: [0.0]*len(self.actions), data["Q"])
+            # restore epsilon if saved
+            self.epsilon = data.get("epsilon", self.epsilon)
