@@ -1,6 +1,7 @@
 import random
 import logging
 import traci
+import os
 from traci import TraCIException
 
 from .safe_driver import SafeDriver
@@ -22,6 +23,7 @@ class AgentManager:
         self.agents = []
         self.safe_driver = None
         self.risky_driver = None
+        self.model_dir = os.path.join(os.path.dirname(__file__), "learning", "models")
         self.valid_routes = [ # manually chose 10 routes that span the map for training
             ("-100306119", "-102745233"),
             ("-100306144", "-1040796649#1"),
@@ -78,6 +80,10 @@ class AgentManager:
             recorder = TLSEventRecorder()
             self.safe_driver = SafeDriver(safe_id, recorder)
             self.agents.append(self.safe_driver)
+            # load baseline safedriver q table
+            safe_path = os.path.join(self.model_dir, "safe_driver_qtable.pkl")
+            self.safe_driver.qtable.load(safe_path)
+
         else:
             self.safe_driver.vehicle_id = safe_id
             self.safe_driver.prev_state = None
@@ -85,25 +91,20 @@ class AgentManager:
             self.safe_driver.recorder = TLSEventRecorder()
             self.safe_driver.last_tls_phase = None
 
-        # → load persisted Q-values (if any)
-        qpath_safe = r"C:\Users\lolam\Documents\comp sci\y3\y3-spr\IntelAgents\Coursework\project\src\agents\learning\models\safe_driver_qtable.pkl"
-        self.safe_driver.qtable.load(qpath_safe)
-
         # riskydriver instantiation / reuse
         if self.risky_driver is None:
             recorder = TLSEventRecorder()
             self.risky_driver = RiskyDriver(risky_id, self.route_id, recorder)
             self.agents.append(self.risky_driver)
+            # load baseline RiskyDriver Q-table (and its ε)
+            risky_path = os.path.join(self.model_dir, "risky_driver_qtable.pkl")
+            self.risky_driver.qtable.load(risky_path)
         else:
             self.risky_driver.vehicle_id = risky_id
             self.risky_driver.prev_state = None
             self.risky_driver.last_action = None
             self.risky_driver.recorder = TLSEventRecorder()
             self.risky_driver.last_tls_phase = None
-
-        # → load persisted Q-values for risky driver
-        qpath_risky = r"C:\Users\lolam\Documents\comp sci\y3\y3-spr\IntelAgents\Coursework\project\src\agents\learning\models\risky_driver_qtable.pkl"
-        self.risky_driver.qtable.load(qpath_risky)
 
     def update_agents(self, step: int) -> None:
         active = set(traci.vehicle.getIDList())

@@ -28,7 +28,7 @@ def main(num_runs: int = 100):
     collector = MetricsCollector()
     exporter = CsvExporter()
     mgr = AgentManager()
-
+    
     eps_history_safe = []
     eps_history_risky = []
     all_runs = []
@@ -273,4 +273,4 @@ def main(num_runs: int = 100):
         print(f"[Plot] avg speed-bin comparison ({group_size}) for {agent_id} saved to {out_path}")
 
 if __name__ == "__main__":
-    main(100)
+    main(10)
