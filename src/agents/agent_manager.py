@@ -64,7 +64,7 @@ class AgentManager:
 
         safe_id, risky_id = "safe_1", "risky_1"
 
-        # Step 2: instantiate or reset drivers *before* we use max_speed_excess
+        # Step 2: instantiate or reset drivers we use max_speed_excess
         if self.safe_driver is None:
             recorder = TLSEventRecorder()
             self.safe_driver = SafeDriver(safe_id, recorder)
@@ -72,6 +72,7 @@ class AgentManager:
             # load pretrained SafeDriver Q-table
             safe_path = os.path.join(self.model_dir, "safe_driver_qtable.pkl")
             self.safe_driver.qtable.load(safe_path)
+            self.safe_driver.qtable.epsilon = 0.99 # epsilon not loaded = decays
         else:
             self.safe_driver.vehicle_id      = safe_id
             self.safe_driver.prev_state      = None
@@ -86,6 +87,7 @@ class AgentManager:
             # load pretrained RiskyDriver Q-table
             risky_path = os.path.join(self.model_dir, "risky_driver_qtable.pkl")
             self.risky_driver.qtable.load(risky_path)
+            self.risky_driver.qtable.epsilon = 0.99
         else:
             self.risky_driver.vehicle_id      = risky_id
             self.risky_driver.prev_state      = None

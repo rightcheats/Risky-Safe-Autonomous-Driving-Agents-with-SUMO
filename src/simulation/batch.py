@@ -209,7 +209,8 @@ def main(num_runs: int = 100):
 
     # --- Compare average distribution over first vs last 10 runs per agent ---
     # determine group size (use 10 or half of runs if fewer)
-    group_size = min(10, successful // 2 or 1)
+    pct = 0.10
+    group_size = max(1, int(successful * pct))
     first_group = all_runs[:group_size]
     last_group  = all_runs[-group_size:]
 
@@ -239,7 +240,7 @@ def main(num_runs: int = 100):
 
         # build DataFrame of fractions
         df_cmp = pd.DataFrame({
-            "Group": [f"Avg of First {group_size} Runs", f"Avg of Last {group_size} Runs"],
+            "Group": [f"Avg of First {int(pct*100)}%  Runs", f"Avg of Last {int(pct*100)}% Runs"],
             **{
                 bin_labels[b]: [
                     agg_first[b] / tot_first,
@@ -272,4 +273,4 @@ def main(num_runs: int = 100):
         print(f"[Plot] avg speed-bin comparison ({group_size}) for {agent_id} saved to {out_path}")
 
 if __name__ == "__main__":
-    main(5)
+    main(300)

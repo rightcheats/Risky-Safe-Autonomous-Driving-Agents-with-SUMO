@@ -1,8 +1,8 @@
 # extra reward for accelerating in green, extra penalty for slowing/brking
 R_GREEN = 0.5  
-K_DECEL  = 0.1  
+K_DECEL  = 0.08  
 
-def safe_reward(prev_state, action, new_state, decel: float) -> float:
+def safe_reward(prev_state, action, new_state, decel: float, epsilon: float) -> float:
     """
     Reward for SafeDriver:
         - stop on red
@@ -10,7 +10,9 @@ def safe_reward(prev_state, action, new_state, decel: float) -> float:
         - go on green
     """
     phase = prev_state[0]
-    reward = 0.0
+    # small baseline to diversify early actions by encouraging go
+    is_go = action.startswith('GO')
+    reward = 0.1 if is_go else 0.0
 
     # --- TLS
     # penalises any go on red
@@ -38,13 +40,13 @@ def safe_reward(prev_state, action, new_state, decel: float) -> float:
     # SPEED COMPLIANCE
     # reward going the speed limit
     if action == 'GO_COMPLIANT':
-        reward += 0.5
-    # penalise small overshoot
+        reward += 0.2
     elif action == 'GO_OVERSHOOT_S':
-        reward -= 0.5
-    # heavily penalise large overshoot
+        # early on (ε≈1) you get +0.5; later (ε→0) you get –0.5
+        reward += epsilon * 0.5 + (1 - epsilon) * (-0.5)
     elif action == 'GO_OVERSHOOT_L':
-        reward -= 1.0
+        # early on +0.3; later –1.0
+        reward += epsilon * 0.3 + (1 - epsilon) * (-1.0)
 
     return reward
 
@@ -62,29 +64,24 @@ def risky_reward(prev_state, action, new_state, dist_bin: int, max_dist_bin: int
     # baseline small  reward for going 
     reward = 0.2 if is_go else -0.1
 
-    # --- TLS
-    # reward any go on green
+    # --- TLS incentives
     if phase == 'GREEN' and is_go:
-         reward += R_GREEN * (dist_bin / max_dist_bin) # give higher reward if green further 
-    # reward any go on amber
+        reward += R_GREEN * (dist_bin / max_dist_bin)
     if phase == 'AMBER' and is_go:
-         reward += 0.3
-    # penalise stop on green
+        reward += 0.3
     if phase == 'GREEN' and action == 'STOP':
         reward -= 1.0
-    # penalise any go on red
     if phase == 'RED' and is_go:
-         reward -= 0.9
+        reward -= 0.9
 
-    # --- SPEED COMPLIANCE
-    # extra bonus for compliant go on green
-    if action == 'GO_COMPLIANT' and phase == 'GREEN':
-        reward += 0.2
+    # --- SPEED STRATEGY
+    ttl_bin = new_state[3]  # stage of learning
 
-    # overshoots
+    if action == 'GO_COMPLIANT' and phase in ['GREEN', 'AMBER']:
+        reward += 1.0
     if action == 'GO_OVERSHOOT_S':
-        reward += 0.4   # small speeding bonus
+        reward += 3.0
     elif action == 'GO_OVERSHOOT_L':
-        reward += 20   # large speeding penalty
+        reward += 3.0 * ttl_bin
 
     return reward

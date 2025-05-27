@@ -132,7 +132,7 @@ class SafeDriver(QLearningDriver):
         decel: float
     ) -> float:
         
-        r = safe_reward(prev_state, action, new_state, decel)
+        r = safe_reward(prev_state, action, new_state, decel, self.qtable.epsilon)
 
         # penalty for > speed limit
         _, _, speed_b, _ = new_state
