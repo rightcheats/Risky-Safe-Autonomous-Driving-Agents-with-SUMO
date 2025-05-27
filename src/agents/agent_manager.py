@@ -46,7 +46,7 @@ class AgentManager:
         valid_edges = traci.edge.getIDList()
         if from_edge not in valid_edges or to_edge not in valid_edges:
             raise ValueError(f"Invalid route edges: {from_edge} → {to_edge}")
-        logger.info("Route validation passed for %s → %s", from_edge, to_edge)
+        # logger.info("Route validation passed for %s → %s", from_edge, to_edge)
 
     def inject_agents(self) -> None:
         # pick a random route
@@ -107,7 +107,7 @@ class AgentManager:
 
         route_edges = traci.route.getEdges(self.route_id)
         route_max = max(edge_speed(e) for e in route_edges)
-        logger.info("Route max speed limit across edges: %.2f", route_max)
+        # logger.info("Route max speed limit across edges: %.2f", route_max)
 
         for vid, color in ((safe_id, (0, 0, 255)), (risky_id, (255, 0, 0))):
             traci.vehicle.add(
@@ -133,13 +133,18 @@ class AgentManager:
 
             # disable speed-limit enforcement (bit 6)
             mode = traci.vehicle.getSpeedMode(vid)
-            traci.vehicle.setSpeedMode(vid, mode | (1 << 6))
+            traci.vehicle.setSpeedMode(vid, 0)
 
-        logger.info(
-            "Injected agents on %s (route #%d)",
-            self.route_id,
-            self.chosen_route_index,
-        )
+            mode_after = traci.vehicle.getSpeedMode(vid)
+            logger.info("%s speed mode set: initial=%s, after=%s",
+                        vid, mode, mode_after)
+
+
+        # logger.info(
+        #     "Injected agents on %s (route #%d)",
+        #     self.route_id,
+        #     self.chosen_route_index,
+        # )
 
     def update_agents(self, step: int) -> None:
         active = set(traci.vehicle.getIDList())
@@ -173,7 +178,7 @@ class AgentManager:
         self.risky_driver.qtable.decay_epsilon(
             decay_rate=decay_risky, min_epsilon=min_risky
         )
-        logger.info("RiskyDriver ε: %.4f → %.4f", old, self.risky_driver.qtable.epsilon)
+        # logger.info("RiskyDriver ε: %.4f → %.4f", old, self.risky_driver.qtable.epsilon)
         self.risky_driver.prev_state  = None
         self.risky_driver.last_action = None
 
@@ -182,6 +187,6 @@ class AgentManager:
         self.safe_driver.qtable.decay_epsilon(
             decay_rate=decay_safe, min_epsilon=min_safe
         )
-        logger.info("SafeDriver ε: %.4f → %.4f", old, self.safe_driver.qtable.epsilon)
+        # logger.info("SafeDriver ε: %.4f → %.4f", old, self.safe_driver.qtable.epsilon)
         self.safe_driver.prev_state  = None
         self.safe_driver.last_action = None

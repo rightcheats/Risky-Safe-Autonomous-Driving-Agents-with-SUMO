@@ -239,14 +239,14 @@ def main(num_runs: int = 100):
 
         # build DataFrame of fractions
         df_cmp = pd.DataFrame({
-            "group": [f"First {group_size}", f"Last {group_size}"],
+            "Group": [f"Avg of First {group_size} Runs", f"Avg of Last {group_size} Runs"],
             **{
                 bin_labels[b]: [
                     agg_first[b] / tot_first,
                     agg_last[b]  / tot_last
                 ] for b in sorted(bin_labels)
             }
-        }).set_index("group")
+        }).set_index("Group")
 
         # plot stacked-bar comparison
         fig, ax = plt.subplots(figsize=(8, 4))
@@ -257,11 +257,10 @@ def main(num_runs: int = 100):
             legend=True
         )
         fig.suptitle(
-            f"{agent_id}: Avg speed-bin distribution\n"
-            f"First {group_size} vs Last {group_size} runs",
+            f"{agent_id}: Avg Speed-Bin Distribution\n",
             y=0.95
         )
-        ax.set_ylabel("Fraction of timesteps")
+        ax.set_ylabel("Fraction of Timesteps")
         ax.set_ylim(0, 1)
         plt.xticks(rotation=0)
         plt.tight_layout()
@@ -273,4 +272,4 @@ def main(num_runs: int = 100):
         print(f"[Plot] avg speed-bin comparison ({group_size}) for {agent_id} saved to {out_path}")
 
 if __name__ == "__main__":
-    main(100)
+    main(5)

@@ -85,6 +85,6 @@ def risky_reward(prev_state, action, new_state, dist_bin: int, max_dist_bin: int
     if action == 'GO_OVERSHOOT_S':
         reward += 0.4   # small speeding bonus
     elif action == 'GO_OVERSHOOT_L':
-        reward -= 0.7   # large speeding penalty
+        reward += 20   # large speeding penalty
 
     return reward

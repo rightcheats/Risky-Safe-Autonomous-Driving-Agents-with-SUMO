@@ -1,4 +1,7 @@
 import traci
+import logging
+
+logger = logging.getLogger(__name__)
 
 SUDDEN_BRAKE_THRESHOLD = 3.0
 
@@ -76,6 +79,10 @@ class SimulationRunner:
                               if vid == agent_manager.safe_driver.vehicle_id
                               else agent_manager.risky_driver)
                     b = driver._speed_bin(speed)
+                    
+                    logger.debug(
+                        "Vehicle %s: Current speed=%.2f m/s, Speed Bin=%d", vid, speed, b)
+                    
                     rec['speed_bin_counts'][b] += 1 
 
                     # collisions

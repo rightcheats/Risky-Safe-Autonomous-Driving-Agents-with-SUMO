@@ -44,7 +44,7 @@ class QTable:
             act for act, q in zip(self.actions, q_vals) if q == max_q
         ]
         action = random.choice(best_actions)
-        logger.debug("Exploiting: chose %s in state %s", action, state)
+        # logger.debug("Exploiting: chose %s in state %s", action, state)
         return action
 
     def update(self, state, action, reward, next_state):
@@ -68,7 +68,7 @@ class QTable:
         """Anneal epsilon after each episode/step-to-step decay"""
         old_eps = self.epsilon
         self.epsilon = max(min_epsilon, self.epsilon * decay_rate)
-        logger.info("Epsilon decayed: %.4f → %.4f", old_eps, self.epsilon)
+        # logger.info("Epsilon decayed: %.4f → %.4f", old_eps, self.epsilon)
 
     def save(self, filepath: str) -> None:
         """Persist Q-table to disk."""
