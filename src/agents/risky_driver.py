@@ -22,7 +22,10 @@ class RiskyDriver(QLearningDriver):
         super().__init__(
             vehicle_id=vehicle_id,
             recorder=recorder,
-            actions=['STOP', 'SLOW', 'GO'],
+            actions=[
+                'STOP', 'SLOW',
+                'GO_COMPLIANT', 'GO_OVERSHOOT_S', 'GO_OVERSHOOT_L',
+            ],
             alpha=0.1,
             gamma=0.9,
             epsilon=1.0,
@@ -35,8 +38,9 @@ class RiskyDriver(QLearningDriver):
         self.a_c = 4.5
         self.a_max = 2.6
         self.accel_duration = 1.0 
-        self.max_speed_excess = 1.2 # allowed to go 20% over the speed limit
-        self.small_excess_ratio = 1.1 # small vs large speed overshoot thresh
+        
+        self.max_speed_excess: float = 2.0 # allowed to explore double the speed limit
+        self.small_excess_ratio: float = 1.2 # small overshoot
 
     def encode_state(self) -> tuple[str,int,int,int]:
         """
@@ -141,17 +145,16 @@ class RiskyDriver(QLearningDriver):
         return r
 
     def apply_action(self, action: str) -> None:
+        allowed = traci.vehicle.getAllowedSpeed(self.vehicle_id)
         if action == 'STOP':
             traci.vehicle.setSpeed(self.vehicle_id, 0.0)
         elif action == 'SLOW':
-            traci.vehicle.slowDown(
-                self.vehicle_id, 0.0, self.a_c  # comfortable decel
-            )
-        else:  # GO: set speed above the limit
-            allowed = traci.vehicle.getAllowedSpeed(self.vehicle_id)   
-            target = allowed * self.max_speed_excess                  
-            traci.vehicle.setSpeed(self.vehicle_id, target)           
-            logger.debug(
-                "RiskyDriver %s GO → setSpeed=%.2f (%.0f%% of limit)",
-                self.vehicle_id, target, 100 * self.max_speed_excess
-            )
+            traci.vehicle.slowDown(self.vehicle_id, 0.0, self.a_c)
+        elif action == 'GO_COMPLIANT':
+            traci.vehicle.setSpeed(self.vehicle_id, allowed)
+        elif action == 'GO_OVERSHOOT_S':
+            traci.vehicle.setSpeed(self.vehicle_id, allowed * self.small_excess_ratio)
+        elif action == 'GO_OVERSHOOT_L':
+            traci.vehicle.setSpeed(self.vehicle_id, allowed * self.max_speed_excess)
+        else:
+            logger.error("RiskyDriver %s: unknown action %r", self.vehicle_id, action)

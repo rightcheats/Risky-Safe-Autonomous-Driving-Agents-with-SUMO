@@ -34,7 +34,10 @@ class SafeDriver(QLearningDriver):
         super().__init__(
             vehicle_id=vehicle_id,
             recorder=recorder,
-            actions=['STOP', 'SLOW', 'GO'],
+            actions=[
+                'STOP', 'SLOW',
+                'GO_COMPLIANT', 'GO_OVERSHOOT_S', 'GO_OVERSHOOT_L',
+            ],
             alpha=0.1,
             gamma=0.9,
             epsilon=1.0,
@@ -42,6 +45,10 @@ class SafeDriver(QLearningDriver):
         self.state = 'approach'
 
         self.last_tls_phase: str | None = None
+
+        self.max_speed_excess: float = 2.0 # allow exploration of double the speed limit
+        self.small_excess_ratio: float = 1.2 # differentiate overshooting 
+
 
     def encode_state(self) -> tuple[str,int,int,int]:
         """
@@ -84,13 +91,22 @@ class SafeDriver(QLearningDriver):
 
         return phase, dist_b, speed_b, ttl_b
 
-    #NOTE: new = add q learning for speed
     def _speed_bin(self, speed: float) -> int:
+        """
+        0: stopped
+        1: at or below limit
+        2: small overshoot (<= small_excess_ratio * limit)
+        3: large overshoot (> small_excess_ratio * limit)
+        """
         if speed == 0:
             return 0
-        # compare against lane's allowed speed
         allowed = traci.vehicle.getAllowedSpeed(self.vehicle_id)
-        speed_b = 1 if speed <= allowed else 2
+        if speed <= allowed:
+            speed_b = 1
+        elif speed <= allowed * self.small_excess_ratio:
+            speed_b = 2
+        else:
+            speed_b = 3
         logger.debug(
             "SafeDriver %s: speed=%.2f, allowed=%.2f → speed_bin=%d",
             self.vehicle_id, speed, allowed, speed_b
@@ -144,16 +160,16 @@ class SafeDriver(QLearningDriver):
         return r
 
     def apply_action(self, action: str) -> None:
+        allowed = traci.vehicle.getAllowedSpeed(self.vehicle_id)
         if action == 'STOP':
             traci.vehicle.setSpeed(self.vehicle_id, 0.0)
         elif action == 'SLOW':
-            traci.vehicle.slowDown(
-                self.vehicle_id, 0.0, SafeDriver.DECEL_AMBER
-            )
-        else:  # GO action = comply with current speed limit
-            allowed = traci.vehicle.getAllowedSpeed(self.vehicle_id)
+            traci.vehicle.slowDown(self.vehicle_id, 0.0, SafeDriver.DECEL_AMBER)
+        elif action == 'GO_COMPLIANT':
             traci.vehicle.setSpeed(self.vehicle_id, allowed)
-            logger.debug(
-                "SafeDriver %s applied GO → setSpeed=%.2f (allowed)",
-                self.vehicle_id, allowed
-            )
+        elif action == 'GO_OVERSHOOT_S':
+            traci.vehicle.setSpeed(self.vehicle_id, allowed * self.small_excess_ratio)
+        elif action == 'GO_OVERSHOOT_L':
+            traci.vehicle.setSpeed(self.vehicle_id, allowed * self.max_speed_excess)
+        else:
+            logger.error("SafeDriver %s: unknown action %r", self.vehicle_id, action)

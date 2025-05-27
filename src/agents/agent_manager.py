@@ -2,7 +2,9 @@ import random
 import logging
 import traci
 import os
+
 from traci import TraCIException
+from traci import constants as tc
 
 from .safe_driver import SafeDriver
 from .risky_driver import RiskyDriver
@@ -24,7 +26,7 @@ class AgentManager:
         self.safe_driver = None
         self.risky_driver = None
         self.model_dir = os.path.join(os.path.dirname(__file__), "learning", "models")
-        self.valid_routes = [ # manually chose 10 routes that span the map for training
+        self.valid_routes = [  # manually chose 10 routes that span the map for training
             ("-100306119", "-102745233"),
             ("-100306144", "-1040796649#1"),
             ("-1051388674#0", "-1052870930"),
@@ -35,7 +37,7 @@ class AgentManager:
             ("-49797451#0", "2483868#0"),
             ("584351060", "-5067431#0"),
             ("-5067431#1", "-510234237#1"),
-        ] #TODO: add more routes? automatic routing? 
+        ]
         self.chosen_route_index = None
         self.route_id = None
         self.destination_edge = None
@@ -47,6 +49,7 @@ class AgentManager:
         logger.info("Route validation passed for %s → %s", from_edge, to_edge)
 
     def inject_agents(self) -> None:
+        # pick a random route
         self.chosen_route_index = random.randint(1, len(self.valid_routes))
         from_edge, to_edge = self.valid_routes[self.chosen_route_index - 1]
         self.validate_route_edges(from_edge, to_edge)
@@ -58,9 +61,55 @@ class AgentManager:
             traci.route.add(self.route_id, [from_edge, to_edge])
         except TraCIException:
             pass
-        
+
         safe_id, risky_id = "safe_1", "risky_1"
-        for vid, color in ((safe_id, (0, 0, 255)), (risky_id, (255, 0, 0))): # safe = blue, risky = red
+
+        # Step 2: instantiate or reset drivers *before* we use max_speed_excess
+        if self.safe_driver is None:
+            recorder = TLSEventRecorder()
+            self.safe_driver = SafeDriver(safe_id, recorder)
+            self.agents.append(self.safe_driver)
+            # load pretrained SafeDriver Q-table
+            safe_path = os.path.join(self.model_dir, "safe_driver_qtable.pkl")
+            self.safe_driver.qtable.load(safe_path)
+        else:
+            self.safe_driver.vehicle_id      = safe_id
+            self.safe_driver.prev_state      = None
+            self.safe_driver.last_action     = None
+            self.safe_driver.recorder        = TLSEventRecorder()
+            self.safe_driver.last_tls_phase  = None
+
+        if self.risky_driver is None:
+            recorder = TLSEventRecorder()
+            self.risky_driver = RiskyDriver(risky_id, self.route_id, recorder)
+            self.agents.append(self.risky_driver)
+            # load pretrained RiskyDriver Q-table
+            risky_path = os.path.join(self.model_dir, "risky_driver_qtable.pkl")
+            self.risky_driver.qtable.load(risky_path)
+        else:
+            self.risky_driver.vehicle_id      = risky_id
+            self.risky_driver.prev_state      = None
+            self.risky_driver.last_action     = None
+            self.risky_driver.recorder        = TLSEventRecorder()
+            self.risky_driver.last_tls_phase  = None
+
+        def edge_speed(edge_id: str) -> float:
+            # 1) edge parameter “speed”
+            s = traci.edge.getParameter(edge_id, "speed")
+            if s:
+                return float(s)
+            # 2) fallback: use first lane’s maxSpeed
+            num = traci.edge.getLaneNumber(edge_id)
+            if num > 0:
+                lane0 = f"{edge_id}_0"
+                return traci.lane.getMaxSpeed(lane0)
+            return 0.0
+
+        route_edges = traci.route.getEdges(self.route_id)
+        route_max = max(edge_speed(e) for e in route_edges)
+        logger.info("Route max speed limit across edges: %.2f", route_max)
+
+        for vid, color in ((safe_id, (0, 0, 255)), (risky_id, (255, 0, 0))):
             traci.vehicle.add(
                 vid,
                 routeID=self.route_id,
@@ -69,42 +118,28 @@ class AgentManager:
             )
             traci.vehicle.setColor(vid, color)
 
+            # choose each agent’s overshoot factor
+            factor = (
+                self.safe_driver.max_speed_excess
+                if vid == safe_id
+                else self.risky_driver.max_speed_excess
+            )
+            new_max = route_max * factor
+            traci.vehicle.setMaxSpeed(vid, new_max)
+            logger.info(
+                "%s maxSpeed bumped: route_max=%.2f → maxSpeed=%.2f",
+                vid, route_max, new_max
+            )
+
+            # disable speed-limit enforcement (bit 6)
+            mode = traci.vehicle.getSpeedMode(vid)
+            traci.vehicle.setSpeedMode(vid, mode | (1 << 6))
+
         logger.info(
             "Injected agents on %s (route #%d)",
             self.route_id,
             self.chosen_route_index,
         )
-
-        # safedriver instantiation / reuse
-        if self.safe_driver is None:
-            recorder = TLSEventRecorder()
-            self.safe_driver = SafeDriver(safe_id, recorder)
-            self.agents.append(self.safe_driver)
-            # load baseline safedriver q table
-            safe_path = os.path.join(self.model_dir, "safe_driver_qtable.pkl")
-            self.safe_driver.qtable.load(safe_path)
-
-        else:
-            self.safe_driver.vehicle_id = safe_id
-            self.safe_driver.prev_state = None
-            self.safe_driver.last_action = None
-            self.safe_driver.recorder = TLSEventRecorder()
-            self.safe_driver.last_tls_phase = None
-
-        # riskydriver instantiation / reuse
-        if self.risky_driver is None:
-            recorder = TLSEventRecorder()
-            self.risky_driver = RiskyDriver(risky_id, self.route_id, recorder)
-            self.agents.append(self.risky_driver)
-            # load baseline RiskyDriver Q-table (and its ε)
-            risky_path = os.path.join(self.model_dir, "risky_driver_qtable.pkl")
-            self.risky_driver.qtable.load(risky_path)
-        else:
-            self.risky_driver.vehicle_id = risky_id
-            self.risky_driver.prev_state = None
-            self.risky_driver.last_action = None
-            self.risky_driver.recorder = TLSEventRecorder()
-            self.risky_driver.last_tls_phase = None
 
     def update_agents(self, step: int) -> None:
         active = set(traci.vehicle.getIDList())
@@ -112,14 +147,6 @@ class AgentManager:
             vid = getattr(agent, "vehicle_id", None)
             if vid in active:
                 agent.update()
-
-        # force cam to follow safe, replace with risky_1 if desired
-        #TODO: wrap so errors dont keep appearing
-        # if step % 10 == 0 and "safe_1" in active:
-        #     try:
-        #         traci.gui.trackVehicle("View #0", "safe_1")
-        #     except TraCIException:
-        #         pass
 
     def get_destination_edge(self) -> str:
         return self.destination_edge
@@ -130,35 +157,31 @@ class AgentManager:
     def decay_exploration(self) -> None:
         """
         Apply agent-specific epsilon-decay schedules:
-        - RiskyDriver: epsilon_0 = 0.99 -> epsilon_min = 0.10 over 100 episodes
-        - SafeDriver:  epsilon_0 = 0.99 -> epsilon_min = 0.01 over 50 episodes
-        Resets each drivers episode memory afterward.
+        - RiskyDriver: epsilon_0 = 0.99 → epsilon_min = 0.10 over 100 episodes
+        - SafeDriver:  epsilon_0 = 0.99 → epsilon_min = 0.01 over 50 episodes
+        Resets each drivers’ episode state afterward.
         """
-        # targets & horizons
         e0, min_risky, runs_risky = 0.99, 0.10, 100
         _, min_safe, runs_safe = 0.99, 0.01,  50
 
-        # compute decay rates 
+        # compute decay rates
         decay_risky = (min_risky / e0) ** (1.0 / runs_risky)
         decay_safe  = (min_safe  / e0) ** (1.0 / runs_safe)
 
-        # riskydriver decay
+        # RiskyDriver decay
         old = self.risky_driver.qtable.epsilon
-        self.risky_driver.qtable.decay_epsilon(decay_rate=decay_risky,
-                                            min_epsilon=min_risky)
-        logger.info("RiskyDriver ε: %.4f → %.4f", old,
-                    self.risky_driver.qtable.epsilon)
-        # reset episode state
-        self.risky_driver.prev_state = None
+        self.risky_driver.qtable.decay_epsilon(
+            decay_rate=decay_risky, min_epsilon=min_risky
+        )
+        logger.info("RiskyDriver ε: %.4f → %.4f", old, self.risky_driver.qtable.epsilon)
+        self.risky_driver.prev_state  = None
         self.risky_driver.last_action = None
 
-        # safedriver decay
+        # SafeDriver decay
         old = self.safe_driver.qtable.epsilon
-        self.safe_driver.qtable.decay_epsilon(decay_rate=decay_safe,
-                                            min_epsilon=min_safe)
-        logger.info("SafeDriver ε: %.4f → %.4f", old,
-                    self.safe_driver.qtable.epsilon)
-        # reset episode state
-        self.safe_driver.prev_state = None
+        self.safe_driver.qtable.decay_epsilon(
+            decay_rate=decay_safe, min_epsilon=min_safe
+        )
+        logger.info("SafeDriver ε: %.4f → %.4f", old, self.safe_driver.qtable.epsilon)
+        self.safe_driver.prev_state  = None
         self.safe_driver.last_action = None
-

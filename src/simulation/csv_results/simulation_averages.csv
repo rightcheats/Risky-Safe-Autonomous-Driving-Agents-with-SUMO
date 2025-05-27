@@ -1,3 +1,3 @@
 Agent,AvgTime(steps),AvgDistance(m),AvgSpeed(m/s),AvgMaxSpeed(m/s),AvgEdges,NumRuns,AvgTLS_enc,AvgAmber_enc,AvgRed_enc,AvgGreen_enc,AvgAmber_runs,AvgRed_runs,AvgGreen_runs,AvgSudden_brakes,AvgMaxDecel(m/s^2),AvgAvgDecel(m/s^2),AvgLane_changes,AvgCollisions,AvgWaitTime(s),TotalTLS_enc,TotalAmber_enc,TotalRed_enc,TotalGreen_enc
-safe_1,347.2,1855.33,5.35,9.53,59.9,10,5.7,1.6,3.6,0.5,1.4,3.5,0.8,26.8,4.05,8.76,59.9,0.0,0.0,57,16,36,5
-risky_1,525.4,1857.57,3.66,8.83,61.9,10,5.7,1.4,3.7,0.6,1.0,3.9,0.8,70.1,4.05,5.7,62.3,0.0,0.0,57,14,37,6
+safe_1,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A
+risky_1,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A
