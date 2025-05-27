@@ -26,18 +26,6 @@ class AgentManager:
         self.safe_driver = None
         self.risky_driver = None
         self.model_dir = os.path.join(os.path.dirname(__file__), "learning", "models")
-        self.valid_routes = [  # manually chose 10 routes that span the map for training
-            ("-100306119", "-102745233"),
-            ("-100306144", "-1040796649#1"),
-            ("-1051388674#0", "-1052870930"),
-            ("-1052870931", "-1054937080#1"),
-            ("-1055385139#1", "-1065099801#1"),
-            ("-1065099802#1", "-1065201821#0"),
-            ("-493711858#1", "23120854#2"),
-            ("-49797451#0", "2483868#0"),
-            ("584351060", "-5067431#0"),
-            ("-5067431#1", "-510234237#1"),
-        ]
         self.chosen_route_index = None
         self.route_id = None
         self.destination_edge = None
@@ -49,18 +37,31 @@ class AgentManager:
         # logger.info("Route validation passed for %s → %s", from_edge, to_edge)
 
     def inject_agents(self) -> None:
-        # pick a random route
-        self.chosen_route_index = random.randint(1, len(self.valid_routes))
-        from_edge, to_edge = self.valid_routes[self.chosen_route_index - 1]
-        self.validate_route_edges(from_edge, to_edge)
+        
+        # pick a valid random route via SUMO’s router, retry up to 100 times
+        edges = traci.edge.getIDList()
+        start_edge = end_edge = None
+        self.route_edges = []
 
-        self.route_id = f"route_{from_edge}_to_{to_edge}"
-        self.destination_edge = to_edge
+        for _ in range(100):
+            a, b = random.sample(edges, 2)
+            try:
+                candidate = traci.simulation.findRoute(a, b)
+            except TraCIException:
+                continue
+            if len(candidate.edges) > 1:
+                start_edge, end_edge = a, b
+                self.route_edges = candidate.edges
+                break
 
-        try:
-            traci.route.add(self.route_id, [from_edge, to_edge])
-        except TraCIException:
-            pass
+        # if no valid route found, abort with clear error
+        if not self.route_edges:
+            raise RuntimeError("Could not find any non-degenerate route in 100 attempts")
+
+        # now register the successful route
+        self.route_id        = f"route_{start_edge}_to_{end_edge}"
+        self.destination_edge = self.route_edges[-1]
+        traci.route.add(self.route_id, self.route_edges)
 
         safe_id, risky_id = "safe_1", "risky_1"
 
