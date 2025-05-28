@@ -150,6 +150,16 @@ class AgentManager:
         # )
 
     def update_agents(self, step: int) -> None:
+
+        # Safe driver auto-follow every 10 steps
+        if step % 10 == 0:
+            if "risky_1" in traci.vehicle.getIDList():
+                try:
+                    traci.gui.trackVehicle("View #0", "risky_1")
+                    logger.info("Auto-following RiskyDriver 'risky_1' at step %d", step)
+                except TraCIException as e:
+                    logger.info("Could not auto-follow RiskyDrover: %s", e)
+
         active = set(traci.vehicle.getIDList())
         for agent in self.agents:
             vid = getattr(agent, "vehicle_id", None)

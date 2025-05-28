@@ -9,7 +9,7 @@ from src.agents.agent_manager import AgentManager
 from src.metrics.metrics_collector import MetricsCollector
 from src.io.csv_exporter import CsvExporter
 
-SUMO_BINARY = "sumo"
+SUMO_BINARY = "sumo-gui"
 SUMO_CONFIG = os.path.join(
     os.path.dirname(__file__),
     "..",
@@ -273,4 +273,4 @@ def main(num_runs: int = 100):
         print(f"[Plot] avg speed-bin comparison ({group_size}) for {agent_id} saved to {out_path}")
 
 if __name__ == "__main__":
-    main(300)
+    main(2)
