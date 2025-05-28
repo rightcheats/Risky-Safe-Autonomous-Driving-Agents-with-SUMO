@@ -1,3 +1,0 @@
-Agent,Route,Time(steps),Distance(m),Speed(m/s),MaxSpeed(m/s),Edges,TLS_enc,Amber_enc,Red_enc,Green_enc,Amber_runs,Red_runs,Green_runs,Sudden_brakes,MaxDecel(m/s^2),AvgDecel(m/s^2),Lane_changes,Collisions,WaitTime(s)
-safe_1,,251,2412.79,9.61,18.95,59,6,0,5,1,0,5,1,87,18.95,9.24,58,2,0.0
-risky_1,,277,2411.0,8.7,16.78,62,6,2,3,1,0,5,1,77,16.78,9.45,61,2,0.0

@@ -273,4 +273,4 @@ def main(num_runs: int = 100):
         print(f"[Plot] avg speed-bin comparison ({group_size}) for {agent_id} saved to {out_path}")
 
 if __name__ == "__main__":
-    main(1)
+    main(300)
