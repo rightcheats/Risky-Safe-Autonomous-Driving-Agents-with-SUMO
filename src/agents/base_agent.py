@@ -4,5 +4,5 @@ class BaseAgent:
         self.route = route
 
     def update(self):
-        """Update agent state. To be overridden by subclasses."""
+        """Update agent state, is overridden by subclasses."""
         pass

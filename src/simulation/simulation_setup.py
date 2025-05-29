@@ -3,7 +3,7 @@ import sys
 import traci
 from agents.agent_manager import AgentManager
 
-#NOTE: prev used for testing, now obsolete, will delete
+#NOTE: used in earlier versions to test gui/routing
 
 if "SUMO_HOME" not in os.environ:
     sys.exit("SUMO_HOME is not set. Please check your environment variables.")
@@ -72,10 +72,10 @@ def run_simulation():
             avg_speed = data["total_distance"] / journey_time if journey_time > 0 else 0
             num_edges = len(data["edges_visited"])
             print(f"\nAgent: {vid}")
-            print(f"→ Journey Time: {journey_time} steps")
-            print(f"→ Total Distance: {data['total_distance']:.2f} meters")
-            print(f"→ Average Speed: {avg_speed:.2f} m/s")
-            print(f"→ Edges Travelled: {num_edges}")
+            print(f">>> Journey Time: {journey_time} steps")
+            print(f">>> Total Distance: {data['total_distance']:.2f} meters")
+            print(f">>>Average Speed: {avg_speed:.2f} m/s")
+            print(f">>> Edges Travelled: {num_edges}")
         else:
             print(f"\nAgent: {vid} did not reach the destination.")
 

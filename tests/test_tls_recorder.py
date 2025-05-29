@@ -1,7 +1,7 @@
 import pytest
 from src.simulation.tls_recorder import TLSEventRecorder
 
-#NOTE: was having issues with how tls encountered were tracked, triple check this is fixed
+#NOTE: was having issues with how tls encountered were tracked, is fixed now
 
 @pytest.fixture
 def recorder():

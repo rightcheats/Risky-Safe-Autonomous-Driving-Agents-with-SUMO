@@ -1,3 +1,5 @@
+# veriies with epsilon = 0, returns action w/ highest q, and for ep = 1 on prev unseen state returns random valid action
+
 import sys
 import pytest
 

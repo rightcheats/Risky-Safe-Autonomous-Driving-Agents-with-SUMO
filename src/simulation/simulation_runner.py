@@ -7,9 +7,9 @@ SUDDEN_BRAKE_THRESHOLD = 3.0
 
 class SimulationRunner:
     """
-    - starts SUMO simulation
+    - starts SUMO simulation,
     - injects agents, 
-    - collects raw per-agent data
+    - collects raw per-agent data.
     """
     def __init__(self, sumo_binary: str, sumo_config: str,
                  max_steps: int = 3000, step_length: float = 1.0):
@@ -71,10 +71,8 @@ class SimulationRunner:
                     if vid not in traci.vehicle.getIDList():
                         continue
 
-
-                    # --- NEW: tally the current speed bin ---
-                    speed = traci.vehicle.getSpeed(vid)
-                    # pick driver by vehicle_id to get its bin logic
+                    # tally current speed bin
+                    speed = traci.vehicle.getSpeed(vid) # pick driver by veh id to get  bin logic
                     driver = (agent_manager.safe_driver
                               if vid == agent_manager.safe_driver.vehicle_id
                               else agent_manager.risky_driver)
@@ -93,18 +91,18 @@ class SimulationRunner:
                     rec['edges_visited'].add(traci.vehicle.getRoadID(vid))
                     rec['total_distance'] = traci.vehicle.getDistance(vid)
 
-                    # TLS stuff
+                    # --- TLS STUFF
                     next_tls = traci.vehicle.getNextTLS(vid)
                     seen_ids = set()
                     for tls_id, link_index, dist_raw, *extra in next_tls:
                         dist = float(dist_raw)
                         seen_ids.add(tls_id)
 
-                        # fetch actual TLS colour string, e.g. "GrY"
+                        # fetch TLS colour string
                         raw_state = traci.trafficlight.getRedYellowGreenState(tls_id).lower()
                         rec['tls_last_state'][tls_id] = raw_state
 
-                        # count first encounter within 10 m
+                        # count first encounter within 10m
                         if dist <= 10.0 and tls_id not in rec['tls_encountered']:
                             rec['tls_encountered'].add(tls_id)
                             if 'y' in raw_state:
@@ -117,7 +115,7 @@ class SimulationRunner:
                     passed = set(rec['tls_last_state']) - seen_ids
                     for tls_id in passed:
                         last = rec['tls_last_state'].pop(tls_id)
-                        # count one run per TLS passed, based on last observed color
+                        # one run per tls passed based on colour
                         if 'y' in last:
                             rec['amber_run_count'] += 1
                         elif 'r' in last:
@@ -125,7 +123,7 @@ class SimulationRunner:
                         elif 'g' in last:
                             rec['green_run_count'] += 1
 
-                    # speed stuff
+                    # --- SPEED STUFF
                     # max speed
                     speed = traci.vehicle.getSpeed(vid)
                     rec['max_speed'] = max(rec['max_speed'], speed)
@@ -164,12 +162,5 @@ class SimulationRunner:
                 traci.close()
             except traci.TraCIException:
                 pass
-
-            # for agent in agent_manager.agents:
-            #     vid = agent.vehicle_id
-            #     rec = data[vid]
-            #     rec['amber_run_count'] = agent.recorder.amber_runs
-            #     rec['red_run_count'] = agent.recorder.red_runs
-            #     rec['green_run_count'] = agent.recorder.green_runs
 
         return data, route_idx

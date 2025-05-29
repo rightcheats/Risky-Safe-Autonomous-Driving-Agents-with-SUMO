@@ -2,22 +2,15 @@ class MetricsCollector:
     """
     Compute per-run summaries and aggregated averages for: 
         - journey metrics 
-        - TLS interactions 
-        - max-speed
-        - sudden braking
+        - TLS interactions (red/amber/green/overall)
+        - max speed
+        - sudden braking/decel
         - lane changes
         - collisions
         - total wait time
     """
 
     def summarise_run(self, run_data: dict, route_index: int) -> list[list]:
-        """
-        Per-run row:
-        [Agent, Route, Time, Distance, AvgSpeed, MaxSpeed,
-         Edges, TLS_enc, Amber_enc, Red_enc, Amber_runs, Red_runs,
-         Sudden_brakes, MaxDecel, AvgDecel, Lane_changes, Collisions,
-         WaitTime(s)]
-        """
         rows = []
         for vid, rec in run_data.items():
             if rec['end_step'] is not None:
@@ -56,14 +49,6 @@ class MetricsCollector:
         return rows
 
     def compute_averages(self, all_runs: list[tuple[dict, int]]) -> list[list]:
-        """
-        Averages row:
-        [Agent, AvgTime, AvgDist, AvgSpeed, AvgMaxSpeed,
-        AvgEdges, NumRuns, AvgTLS_enc, AvgAmber_enc, AvgRed_enc,
-        AvgAmber_runs, AvgRed_runs, AvgSudden_brakes, AvgMaxDecel,
-        AvgAvgDecel, AvgLane_changes, AvgCollisions, AvgWaitTime(s),
-        TotalTLS_enc, TotalAmber_enc, TotalRed_enc]
-        """
 
         # init accumulators for metrics
         agg = {

@@ -1,8 +1,12 @@
+# test waiting times metric collection
+
 import pytest
 from src.simulation.batch import main                     
-from src.io.csv_exporter import CsvExporter      
+from src.io.csv_exporter import CsvExporter    
 
-# Dummy runner = returns every key summarise_run 
+#NOTE: used in previous versions of the code
+
+# dummy runner = returns every key summarise_run 
 class DummyRunner:
     def __init__(self, *args, **kwargs):
         pass

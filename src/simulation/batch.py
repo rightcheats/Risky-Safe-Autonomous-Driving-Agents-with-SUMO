@@ -11,6 +11,7 @@ from src.agents.agent_manager import AgentManager
 from src.metrics.metrics_collector import MetricsCollector
 from src.io.csv_exporter import CsvExporter
 
+# if want gui then "sumo-gui", using headless to reduce overhead when running large num
 SUMO_BINARY = "sumo"
 SUMO_CONFIG = os.path.join(
     os.path.dirname(__file__),
@@ -43,7 +44,7 @@ def main(num_runs: int = 100):
             all_runs.append((run_data, route_idx))
             successful += 1
 
-            # agent-specific exponential decay
+            # agent-specific decay
             mgr.decay_exploration()
             eps_history_safe.append(mgr.safe_driver.qtable.epsilon)
             eps_history_risky.append(mgr.risky_driver.qtable.epsilon)
@@ -55,7 +56,7 @@ def main(num_runs: int = 100):
 
     print(f"\n>>> Completed {successful}/{num_runs} runs.")
 
-    # FIGURE: epsilon-decay over runs for both drivers
+    # --- FIGURE: epsilon-decay over runs for both drivers
     plt.figure()
     runs = list(range(1, len(eps_history_safe) + 1))
     plt.plot(runs, eps_history_safe,  marker="o", label="SafeDriver")
@@ -92,14 +93,13 @@ def main(num_runs: int = 100):
 
         return df
 
-
     qt_safe = mgr.safe_driver.qtable
     df_q_safe = build_q_df(qt_safe)
 
     qt_risky = mgr.risky_driver.qtable
     df_q_risky = build_q_df(qt_risky)
 
-    # → persist learned Q-values
+    # persist learned Q-values
     model_dir = Path("src/agents/learning/models")
     safe_path = model_dir / "safe_driver_qtable.pkl"
     risky_path = model_dir / "risky_driver_qtable.pkl"
@@ -116,6 +116,7 @@ def main(num_runs: int = 100):
         2: "Cruise (>5 m/s)"
     }
 
+    # --- FIGURE: heatmaps
     def plot_q_heatmap(df_q, qtable, title, out_filename):
         fig, axes = plt.subplots(
             len(phases),
@@ -181,7 +182,7 @@ def main(num_runs: int = 100):
         out_filename="Q_heatmap_grid_risky.png"
     )
 
-    # export csvs
+    # --- DATA: export csvs
     per_rows = []
     for data, ridx in all_runs:
         per_rows += collector.summarise_run(data, ridx)
@@ -209,8 +210,7 @@ def main(num_runs: int = 100):
         rows=avg_rows
     )
 
-    # --- Compare average distribution over first vs last 10 runs per agent ---
-    # determine group size (use 10 or half of runs if fewer)
+    # --- FIGURE: stacked bar charts for speed dist
     pct = 0.10
     group_size = max(1, int(successful * pct))
     first_group = all_runs[:group_size]
@@ -240,7 +240,7 @@ def main(num_runs: int = 100):
         tot_first = sum(agg_first.values()) or 1
         tot_last  = sum(agg_last.values())  or 1
 
-        # build DataFrame of fractions
+        # build df of fractions
         df_cmp = pd.DataFrame({
             "Group": [f"Avg of First {int(pct*100)}%  Runs", f"Avg of Last {int(pct*100)}% Runs"],
             **{
@@ -251,7 +251,7 @@ def main(num_runs: int = 100):
             }
         }).set_index("Group")
 
-        # plot stacked-bar comparison
+        # plot it
         fig, ax = plt.subplots(figsize=(8, 4))
         df_cmp.plot(
             kind="bar",

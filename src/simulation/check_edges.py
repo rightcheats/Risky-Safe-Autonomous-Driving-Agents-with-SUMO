@@ -1,7 +1,7 @@
 import os
 from sumolib import net
 
-#TODO: check if this is obsolete - 
+#NOTE: used to verify prev fixed 10 routes, not currently used (code setup for experiment 3)
 
 net_file = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "osm_data", "osm.net.xml.gz")
@@ -43,6 +43,6 @@ for start, end in valid_routes:
         print(f"MISSING: {', '.join(missing)}")
 
 if all_good:
-    print("\nAll route edges are present in the network!")
+    print("\nAll route edges are present in the network")
 else:
-    print("\nSome edges from valid_routes were not found. Double‑check those IDs.")
+    print("\nSome edges from valid_routes were not found")

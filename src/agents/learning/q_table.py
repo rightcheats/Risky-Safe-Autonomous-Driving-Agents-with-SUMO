@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class QTable:
     """Tabular Q-learning: maintains q-values, chooses actions,
-    applies updates, and handles epsilon-decay"""
+    applies updates, & handles epsilon-decay"""
 
     def __init__(
         self,
@@ -21,6 +21,7 @@ class QTable:
         self.alpha = alpha
         self.gamma = gamma
         self.epsilon = epsilon
+
         # q maps state -> q value for action
         self.Q: dict = defaultdict(lambda: [0.0 for _ in actions])
 
@@ -71,7 +72,7 @@ class QTable:
         # logger.info("Epsilon decayed: %.4f → %.4f", old_eps, self.epsilon)
 
     def save(self, filepath: str) -> None:
-        """Persist Q-table to disk."""
+        """Persist Q-table"""
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "wb") as f:
             pickle.dump({
@@ -80,11 +81,11 @@ class QTable:
             }, f)
 
     def load(self, filepath: str) -> None:
-        """Load Q-table from disk if present."""
+        """Load Q-table if exists"""
         if os.path.exists(filepath):
             with open(filepath, "rb") as f:
                 data = pickle.load(f)
-            # rewrap into defaultdict so unseen states → [0,…]
+            # rewrap into defaultdict
             self.Q = defaultdict(lambda: [0.0]*len(self.actions), data["Q"])
-            # restore epsilon if saved
+            # gets overwritten
             self.epsilon = data.get("epsilon", self.epsilon)

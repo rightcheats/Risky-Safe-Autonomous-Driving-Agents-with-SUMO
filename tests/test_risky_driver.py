@@ -5,7 +5,7 @@ import traci
 from src.agents.risky_driver import RiskyDriver
 from src.simulation.tls_recorder import TLSEventRecorder
 
-#TODO: update to reflect new stuff
+#NOTE: hasn't been updated
 
 @pytest.fixture(autouse=True)
 def stub_traci(monkeypatch):

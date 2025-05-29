@@ -1,6 +1,8 @@
 import pytest
 from src.simulation.simulation_runner import SimulationRunner
 
+# test waiting time
+
 # dummy agents, tls recorder stub
 class DummyAgent:
     def __init__(self, vid):

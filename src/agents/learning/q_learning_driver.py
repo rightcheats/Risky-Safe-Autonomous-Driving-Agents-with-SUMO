@@ -7,12 +7,12 @@ logger = logging.getLogger(__name__)
 
 class QLearningDriver(ABC):
     def __init__(self, vehicle_id, recorder, actions, alpha, gamma, epsilon):
-        self.vehicle_id  = vehicle_id
-        self.recorder    = recorder
-        self.qtable      = QTable(actions, alpha, gamma, epsilon)
-        self.prev_state  = None
+        self.vehicle_id = vehicle_id
+        self.recorder = recorder
+        self.qtable = QTable(actions, alpha, gamma, epsilon)
+        self.prev_state = None
         self.last_action = None
-        self.prev_speed  = None
+        self.prev_speed = None
 
     @abstractmethod
     def encode_state(self):

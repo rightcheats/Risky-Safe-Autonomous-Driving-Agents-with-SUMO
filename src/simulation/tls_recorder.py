@@ -1,4 +1,9 @@
 class TLSEventRecorder:
+    """
+    Recorder for TLS events
+        - tracks seeing them
+        - tracks running them
+    """
     def __init__(self):
         self.amber_encounters = 0
         self.red_encounters = 0

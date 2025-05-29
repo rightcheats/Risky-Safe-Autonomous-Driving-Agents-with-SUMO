@@ -1,4 +1,4 @@
-# test q tables are saved and loaded
+# test q tables are saved and loaded properly
 
 import os, pickle
 

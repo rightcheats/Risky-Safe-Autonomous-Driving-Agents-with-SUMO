@@ -22,11 +22,14 @@ N_TTL_BINS = 4
 
 class SafeDriver(QLearningDriver):
     """
-    Safe/cautious driving style, prioritises safety, stops on amber
+    Safe driving style 
+        - prioritises safety, 
+        - stops on amber,
+        - goes speed limit
     """
     
     DECEL_AMBER = 2.6  
-    DECEL_RED   = 4.5  
+    DECEL_RED = 4.5  
     STOP_MARGIN = 0.5  
     SPEED_PENALTY = 1.0
 
@@ -64,17 +67,6 @@ class SafeDriver(QLearningDriver):
 
         tls_id, _, dist, _ = next_tls[0]
 
-        #NOTE: logic now done in simulation_runner.py isntead
-        # raw   = traci.trafficlight.getRedYellowGreenState(tls_id).lower()
-
-        # phase = 'GREEN' if 'g' in raw else ('AMBER' if 'y' in raw else 'RED')
-
-        # if self.last_tls_phase is None or phase != self.last_tls_phase:
-        #     if phase == 'AMBER':
-        #         self.recorder.saw_amber()
-        #     elif phase == 'RED':
-        #         self.recorder.saw_red()
-
         raw   = traci.trafficlight.getRedYellowGreenState(tls_id).lower()
         phase = 'GREEN' if 'g' in raw else ('AMBER' if 'y' in raw else 'RED')
         self.last_tls_phase = phase
@@ -108,16 +100,15 @@ class SafeDriver(QLearningDriver):
         else:
             speed_b = 3
         logger.debug(
-            "SafeDriver %s: speed=%.2f, allowed=%.2f → speed_bin=%d",
+            "SafeDriver %s: speed=%.2f, allowed=%.2f -> speed_bin=%d",
             self.vehicle_id, speed, allowed, speed_b
         )
         return speed_b
 
     def _time_to_red_bin(self, tls_id: str) -> int:
         """
-        Represent time until next switch into discrete value
+        Represent time until next switch to mimic human drivers
         """
-        # TODO: check tuple size unpack
         switch_time = traci.trafficlight.getNextSwitch(tls_id)
         now = traci.simulation.getTime()
         total_dur = traci.trafficlight.getPhaseDuration(tls_id)
@@ -143,7 +134,6 @@ class SafeDriver(QLearningDriver):
                 self.vehicle_id, SafeDriver.SPEED_PENALTY
             )
 
-        #NOTE: check this works
         phase = prev_state[0]
         if phase == "AMBER" and action == "GO":
             self.recorder.ran_amber()
