@@ -167,7 +167,7 @@ class AgentManager:
         Apply agent-specific epsilon-decay schedules:
         - RiskyDriver: epsilon_0 = 0.99 → epsilon_min = 0.10 over 100 episodes
         - SafeDriver:  epsilon_0 = 0.99 → epsilon_min = 0.01 over 50 episodes
-        Resets each drivers’ episode state afterward.
+        Resets each drivers episode state afterward.
         """
         e0, min_risky, runs_risky = 0.99, 0.10, 100
         _, min_safe, runs_safe = 0.99, 0.01,  50

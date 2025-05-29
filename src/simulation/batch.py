@@ -4,6 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from pathlib import Path
+
 from src.simulation.simulation_runner import SimulationRunner
 from src.agents.agent_manager import AgentManager
 from src.metrics.metrics_collector import MetricsCollector
@@ -98,9 +100,9 @@ def main(num_runs: int = 100):
     df_q_risky = build_q_df(qt_risky)
 
     # → persist learned Q-values
-    model_dir = r"C:\Users\lolam\Documents\comp sci\y3\y3-spr\IntelAgents\Coursework\project\src\agents\learning\models"
-    safe_path  = os.path.join(model_dir, "safe_driver_qtable.pkl")
-    risky_path = os.path.join(model_dir, "risky_driver_qtable.pkl")
+    model_dir = Path("src/agents/learning/models")
+    safe_path = model_dir / "safe_driver_qtable.pkl"
+    risky_path = model_dir / "risky_driver_qtable.pkl"
     mgr.safe_driver.qtable.save(safe_path)
     mgr.risky_driver.qtable.save(risky_path)
     print(f"[Save] Q-tables saved to {model_dir}")
